@@ -1,0 +1,201 @@
+use anyhow::{Context, Result};
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, Deserialize)]
+pub struct Config {
+    pub book: BookConfig,
+    #[serde(default)]
+    pub build: BuildConfig,
+    pub pages: Vec<PageConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BookConfig {
+    pub title: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub authors: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BuildConfig {
+    #[serde(default = "default_src_dir")]
+    pub src_dir: PathBuf,
+    #[serde(default = "default_output_dir")]
+    pub output_dir: PathBuf,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PageConfig {
+    pub title: String,
+    pub path: String,
+}
+
+fn default_src_dir() -> PathBuf {
+    PathBuf::from("src")
+}
+
+fn default_output_dir() -> PathBuf {
+    PathBuf::from("doc")
+}
+
+impl Default for BuildConfig {
+    fn default() -> Self {
+        Self {
+            src_dir: default_src_dir(),
+            output_dir: default_output_dir(),
+        }
+    }
+}
+
+impl Config {
+    pub fn from_file(path: &Path) -> Result<Self> {
+        let contents = std::fs::read_to_string(path)
+            .context(format!("Failed to read config file: {}", path.display()))?;
+        let config: Config = toml::from_str(&contents).context("Failed to parse book.toml")?;
+        config.validate()?;
+        Ok(config)
+    }
+
+    fn validate(&self) -> Result<()> {
+        if self.book.title.is_empty() {
+            anyhow::bail!("Book title cannot be empty");
+        }
+        if self.pages.is_empty() {
+            anyhow::bail!("No pages defined in book.toml");
+        }
+        // Check for duplicate titles
+        let mut titles = std::collections::HashSet::new();
+        for page in &self.pages {
+            if !titles.insert(&page.title) {
+                anyhow::bail!("Duplicate page title: {}", page.title);
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn test_config_parse_valid() {
+        let toml_content = r#"
+[book]
+title = "Test Book"
+description = "A test"
+authors = ["Alice", "Bob"]
+
+[build]
+src_dir = "source"
+output_dir = "output"
+
+[[pages]]
+title = "Page 1"
+path = "page1.md"
+
+[[pages]]
+title = "Page 2"
+path = "page2.md"
+"#;
+        let config: Config = toml::from_str(toml_content).unwrap();
+        assert_eq!(config.book.title, "Test Book");
+        assert_eq!(config.book.description, Some("A test".to_string()));
+        assert_eq!(config.book.authors, vec!["Alice", "Bob"]);
+        assert_eq!(config.build.src_dir, PathBuf::from("source"));
+        assert_eq!(config.build.output_dir, PathBuf::from("output"));
+        assert_eq!(config.pages.len(), 2);
+        assert_eq!(config.pages[0].title, "Page 1");
+        assert_eq!(config.pages[0].path, "page1.md");
+    }
+
+    #[test]
+    fn test_config_defaults() {
+        let toml_content = r#"
+[book]
+title = "Test Book"
+
+[[pages]]
+title = "Page 1"
+path = "page1.md"
+"#;
+        let config: Config = toml::from_str(toml_content).unwrap();
+        assert_eq!(config.build.src_dir, PathBuf::from("src"));
+        assert_eq!(config.build.output_dir, PathBuf::from("doc"));
+        assert_eq!(config.book.description, None);
+        assert!(config.book.authors.is_empty());
+    }
+
+    #[test]
+    fn test_config_validation_empty_title() {
+        let toml_content = r#"
+[book]
+title = ""
+
+[[pages]]
+title = "Page 1"
+path = "page1.md"
+"#;
+        let config: Config = toml::from_str(toml_content).unwrap();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_no_pages() {
+        let config = Config {
+            book: BookConfig {
+                title: "Test Book".to_string(),
+                description: None,
+                authors: vec![],
+            },
+            build: BuildConfig::default(),
+            pages: vec![],
+        };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_duplicate_titles() {
+        let toml_content = r#"
+[book]
+title = "Test Book"
+
+[[pages]]
+title = "Page 1"
+path = "page1.md"
+
+[[pages]]
+title = "Page 1"
+path = "page2.md"
+"#;
+        let config: Config = toml::from_str(toml_content).unwrap();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_from_file() {
+        let temp_dir = std::env::temp_dir();
+        let config_path = temp_dir.join("test_book.toml");
+
+        let toml_content = r#"
+[book]
+title = "Test Book"
+
+[[pages]]
+title = "Page 1"
+path = "page1.md"
+"#;
+
+        let mut file = std::fs::File::create(&config_path).unwrap();
+        file.write_all(toml_content.as_bytes()).unwrap();
+
+        let config = Config::from_file(&config_path).unwrap();
+        assert_eq!(config.book.title, "Test Book");
+
+        std::fs::remove_file(&config_path).ok();
+    }
+}
