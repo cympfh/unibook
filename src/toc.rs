@@ -1,3 +1,5 @@
+use crate::book::BookItem;
+#[cfg(test)]
 use crate::book::PageInfo;
 
 pub struct TocGenerator {
@@ -13,7 +15,7 @@ impl TocGenerator {
         }
     }
 
-    pub fn generate_toc_html(&self, pages: &[PageInfo], current_page: Option<&str>) -> String {
+    pub fn generate_toc_html(&self, items: &[BookItem], current_page: Option<&str>) -> String {
         let mut html = String::new();
         html.push_str("<nav id=\"toc-sidebar\">\n");
         html.push_str(&format!(
@@ -32,38 +34,49 @@ impl TocGenerator {
         html.push_str("  </button>\n");
         html.push_str("  <ul class=\"toc-list\">\n");
 
-        for page in pages {
-            let is_current = Some(page.output_filename.as_str()) == current_page;
-            let current_class = if is_current { " class=\"current\"" } else { "" };
-            html.push_str(&format!(
-                "    <li>\n      <a href=\"/{}\"{}>{}</a>\n",
-                html_escape(&page.output_filename),
-                current_class,
-                html_escape(&page.title)
-            ));
-
-            // Add sections based on show_sections setting
-            let should_show = match self.show_sections.as_str() {
-                "always" => true,
-                "current" => is_current,
-                "never" => false,
-                _ => is_current, // default to "current"
-            };
-
-            if should_show && !page.sections.is_empty() {
-                html.push_str("      <ul class=\"toc-sections\">\n");
-                for section in &page.sections {
+        for item in items {
+            match item {
+                BookItem::Part { title } => {
+                    // Render part as a separator/heading (no link)
                     html.push_str(&format!(
-                        "        <li><a href=\"/{}#{}\">{}</a></li>\n",
-                        html_escape(&page.output_filename),
-                        html_escape(&section.id),
-                        html_escape(&section.title)
+                        "    <li class=\"toc-part\">{}</li>\n",
+                        html_escape(title)
                     ));
                 }
-                html.push_str("      </ul>\n");
-            }
+                BookItem::Page(page) => {
+                    let is_current = Some(page.output_filename.as_str()) == current_page;
+                    let current_class = if is_current { " class=\"current\"" } else { "" };
+                    html.push_str(&format!(
+                        "    <li>\n      <a href=\"/{}\"{}>{}</a>\n",
+                        html_escape(&page.output_filename),
+                        current_class,
+                        html_escape(&page.title)
+                    ));
 
-            html.push_str("    </li>\n");
+                    // Add sections based on show_sections setting
+                    let should_show = match self.show_sections.as_str() {
+                        "always" => true,
+                        "current" => is_current,
+                        "never" => false,
+                        _ => is_current, // default to "current"
+                    };
+
+                    if should_show && !page.sections.is_empty() {
+                        html.push_str("      <ul class=\"toc-sections\">\n");
+                        for section in &page.sections {
+                            html.push_str(&format!(
+                                "        <li><a href=\"/{}#{}\">{}</a></li>\n",
+                                html_escape(&page.output_filename),
+                                html_escape(&section.id),
+                                html_escape(&section.title)
+                            ));
+                        }
+                        html.push_str("      </ul>\n");
+                    }
+
+                    html.push_str("    </li>\n");
+                }
+            }
         }
 
         html.push_str("  </ul>\n");
@@ -171,6 +184,19 @@ body {
   color: var(--text-primary);
 }
 
+/* Part (separator/heading) styling */
+.toc-part {
+  margin: 20px 0 8px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+}
+
 /* Section (H2) styling */
 .toc-sections {
   list-style: none;
@@ -227,26 +253,26 @@ fn html_escape(s: &str) -> String {
 mod tests {
     use super::*;
 
-    fn create_test_pages() -> Vec<PageInfo> {
+    fn create_test_items() -> Vec<BookItem> {
         vec![
-            PageInfo {
+            BookItem::Page(PageInfo {
                 title: "Introduction".to_string(),
                 source_path: std::path::PathBuf::from("src/intro.md"),
                 output_filename: "intro.html".to_string(),
                 sections: vec![],
-            },
-            PageInfo {
+            }),
+            BookItem::Page(PageInfo {
                 title: "Chapter 1".to_string(),
                 source_path: std::path::PathBuf::from("src/chapter1.md"),
                 output_filename: "chapter1.html".to_string(),
                 sections: vec![],
-            },
-            PageInfo {
+            }),
+            BookItem::Page(PageInfo {
                 title: "Chapter 2".to_string(),
                 source_path: std::path::PathBuf::from("src/chapter2.md"),
                 output_filename: "chapter2.html".to_string(),
                 sections: vec![],
-            },
+            }),
         ]
     }
 
@@ -268,8 +294,8 @@ mod tests {
     #[test]
     fn test_generate_toc_html_no_current() {
         let generator = TocGenerator::new("Test Book".to_string(), "current".to_string());
-        let pages = create_test_pages();
-        let html = generator.generate_toc_html(&pages, None);
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
 
         assert!(html.contains("<nav id=\"toc-sidebar\">"));
         assert!(html.contains("<h2>Test Book</h2>"));
@@ -286,8 +312,8 @@ mod tests {
     #[test]
     fn test_generate_toc_html_with_current() {
         let generator = TocGenerator::new("Test Book".to_string(), "current".to_string());
-        let pages = create_test_pages();
-        let html = generator.generate_toc_html(&pages, Some("chapter1.html"));
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, Some("chapter1.html"));
 
         assert!(html.contains("href=\"/chapter1.html\" class=\"current\""));
         assert!(!html.contains("href=\"/intro.html\" class=\"current\""));
@@ -297,13 +323,13 @@ mod tests {
     #[test]
     fn test_generate_toc_html_escapes() {
         let generator = TocGenerator::new("Test <Book>".to_string(), "current".to_string());
-        let pages = vec![PageInfo {
+        let items = vec![BookItem::Page(PageInfo {
             title: "Chapter <1>".to_string(),
             source_path: std::path::PathBuf::from("src/ch1.md"),
             output_filename: "ch1.html".to_string(),
             sections: vec![],
-        }];
-        let html = generator.generate_toc_html(&pages, None);
+        })];
+        let html = generator.generate_toc_html(&items, None);
 
         assert!(html.contains("Test &lt;Book&gt;"));
         assert!(html.contains("Chapter &lt;1&gt;"));
@@ -330,8 +356,8 @@ mod tests {
     #[test]
     fn test_toc_links_correct() {
         let generator = TocGenerator::new("Test".to_string(), "current".to_string());
-        let pages = create_test_pages();
-        let html = generator.generate_toc_html(&pages, None);
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
 
         // Check that all links are present and correctly formatted
         assert!(html.contains("<a href=\"/intro.html\">Introduction</a>"));

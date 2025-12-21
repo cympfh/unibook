@@ -60,7 +60,8 @@ fn default_show_sections() -> String {
 #[derive(Debug, Deserialize, Clone)]
 pub struct PageConfig {
     pub title: String,
-    pub path: String,
+    /// Path to the markdown file. If None, this is a part (separator/heading only)
+    pub path: Option<String>,
 }
 
 fn default_src_dir() -> PathBuf {
@@ -148,7 +149,7 @@ path = "page2.md"
         assert_eq!(config.build.output_dir, PathBuf::from("output"));
         assert_eq!(config.pages.len(), 2);
         assert_eq!(config.pages[0].title, "Page 1");
-        assert_eq!(config.pages[0].path, "page1.md");
+        assert_eq!(config.pages[0].path, Some("page1.md".to_string()));
     }
 
     #[test]

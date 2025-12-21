@@ -22,7 +22,12 @@ impl SearchIndexGenerator {
     pub fn generate(book: &Book, output_dir: &Path) -> Result<()> {
         let mut entries = Vec::new();
 
-        for page in &book.pages {
+        for item in &book.items {
+            let page = match item {
+                crate::book::BookItem::Part { .. } => continue, // Skip parts
+                crate::book::BookItem::Page(page) => page,
+            };
+
             let content = Self::extract_text_from_markdown(&page.source_path)?;
             entries.push(SearchEntry {
                 title: page.title.clone(),

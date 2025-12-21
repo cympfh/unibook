@@ -6,6 +6,7 @@ Markdownファイルから目次付きHTML書籍を生成するドキュメン�
 
 - 📚 **mdbook風のシンプルな設計** - 使いやすいコマンドラインインターフェース
 - 📑 **自動目次生成** - 全ページに左サイドバーの目次を自動追加
+- 📖 **Part階層のサポート** - 章より上の階層（Part）を目次に表示可能
 - 🔍 **全文検索機能** - Ctrl+K でページ内を高速検索
 - 🌓 **カラーテーマ** - ライト/ダークモード対応
 - 📂 **H2セクション表示** - 目次にH2見出しを表示可能
@@ -96,6 +97,12 @@ show_sections = "current"
 title = "はじめに"
 path = "intro.md"
 
+# Part（章より上の階層）を定義できます
+# path を指定しない場合、目次に見出しのみ表示されます（ページは生成されません）
+[[pages]]
+title = "Part 1: 基礎編"
+# path なし = part（見出しのみ）
+
 [[pages]]
 title = "第1章"
 path = "chapter1.md"
@@ -103,6 +110,14 @@ path = "chapter1.md"
 [[pages]]
 title = "第2章"
 path = "chapter2.md"
+
+[[pages]]
+title = "Part 2: 応用編"
+# 別の part
+
+[[pages]]
+title = "第3章"
+path = "chapter3.md"
 ```
 
 ## コマンド一覧

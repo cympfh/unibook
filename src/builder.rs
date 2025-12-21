@@ -104,7 +104,12 @@ impl Builder {
             self.book.config.toc.show_sections.clone(),
         );
 
-        for page in &self.book.pages {
+        for item in &self.book.items {
+            let page = match item {
+                crate::book::BookItem::Part { .. } => continue, // Skip parts
+                crate::book::BookItem::Page(page) => page,
+            };
+
             println!(
                 "Building: {} -> {}",
                 page.source_path.display(),
@@ -112,7 +117,7 @@ impl Builder {
             );
 
             // Generate TOC with current page highlighted
-            let toc_html = toc_gen.generate_toc_html(&self.book.pages, Some(&page.output_filename));
+            let toc_html = toc_gen.generate_toc_html(&self.book.items, Some(&page.output_filename));
             // Replace path separators in slug to avoid creating subdirectories in temp_dir
             let slug = page.slug().replace(['/', '\\'], "_");
             let toc_path = self.temp_dir.join(format!("toc-{}.html", slug));
@@ -153,7 +158,12 @@ impl Builder {
             .context("Failed to generate search index")?;
 
         // Generate index.html that redirects to first page
-        if let Some(first_page) = self.book.pages.first() {
+        let first_page = self.book.items.iter().find_map(|item| match item {
+            crate::book::BookItem::Page(page) => Some(page),
+            _ => None,
+        });
+
+        if let Some(first_page) = first_page {
             let index_path = output_dir.join("index.html");
             let index_content = format!(
                 r#"<!DOCTYPE html>

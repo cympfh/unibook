@@ -2,10 +2,16 @@ use crate::config::Config;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone)]
+pub enum BookItem {
+    Part { title: String },
+    Page(PageInfo),
+}
+
 #[derive(Debug)]
 pub struct Book {
     pub config: Config,
-    pub pages: Vec<PageInfo>,
+    pub items: Vec<BookItem>,
 }
 
 #[derive(Debug, Clone)]
@@ -24,35 +30,46 @@ pub struct Section {
 
 impl Book {
     pub fn from_config(config: Config, base_dir: &Path) -> Result<Self> {
-        let mut pages = Vec::new();
+        let mut items = Vec::new();
 
         for page_config in &config.pages {
-            let source_path = base_dir.join(&config.build.src_dir).join(&page_config.path);
+            match &page_config.path {
+                None => {
+                    // No path = Part (heading only)
+                    items.push(BookItem::Part {
+                        title: page_config.title.clone(),
+                    });
+                }
+                Some(path) => {
+                    // Has path = Page
+                    let source_path = base_dir.join(&config.build.src_dir).join(path);
 
-            // Validate that source file exists
-            if !source_path.exists() {
-                anyhow::bail!(
-                    "Source file not found: {} (looking for: {})",
-                    page_config.path,
-                    source_path.display()
-                );
+                    // Validate that source file exists
+                    if !source_path.exists() {
+                        anyhow::bail!(
+                            "Source file not found: {} (looking for: {})",
+                            path,
+                            source_path.display()
+                        );
+                    }
+
+                    // Convert path to output filename (e.g., intro.md -> intro.html)
+                    let output_filename = Self::source_to_html_filename(path)?;
+
+                    // Extract H2 sections from markdown
+                    let sections = Self::extract_sections(&source_path)?;
+
+                    items.push(BookItem::Page(PageInfo {
+                        title: page_config.title.clone(),
+                        source_path,
+                        output_filename,
+                        sections,
+                    }));
+                }
             }
-
-            // Convert path to output filename (e.g., intro.md -> intro.html)
-            let output_filename = Self::source_to_html_filename(&page_config.path)?;
-
-            // Extract H2 sections from markdown
-            let sections = Self::extract_sections(&source_path)?;
-
-            pages.push(PageInfo {
-                title: page_config.title.clone(),
-                source_path,
-                output_filename,
-                sections,
-            });
         }
 
-        Ok(Self { config, pages })
+        Ok(Self { config, items })
     }
 
     fn source_to_html_filename(source_path: &str) -> Result<String> {
@@ -140,11 +157,11 @@ mod tests {
             pages: vec![
                 PageConfig {
                     title: "Page 1".to_string(),
-                    path: "page1.md".to_string(),
+                    path: Some("page1.md".to_string()),
                 },
                 PageConfig {
                     title: "Page 2".to_string(),
-                    path: "page2.md".to_string(),
+                    path: Some("page2.md".to_string()),
                 },
             ],
         }
@@ -187,11 +204,21 @@ mod tests {
         let config = create_test_config();
         let book = Book::from_config(config, &temp_dir).unwrap();
 
-        assert_eq!(book.pages.len(), 2);
-        assert_eq!(book.pages[0].title, "Page 1");
-        assert_eq!(book.pages[0].output_filename, "page1.html");
-        assert_eq!(book.pages[1].title, "Page 2");
-        assert_eq!(book.pages[1].output_filename, "page2.html");
+        assert_eq!(book.items.len(), 2);
+        match &book.items[0] {
+            BookItem::Page(page) => {
+                assert_eq!(page.title, "Page 1");
+                assert_eq!(page.output_filename, "page1.html");
+            }
+            _ => panic!("Expected Page, got Part"),
+        }
+        match &book.items[1] {
+            BookItem::Page(page) => {
+                assert_eq!(page.title, "Page 2");
+                assert_eq!(page.output_filename, "page2.html");
+            }
+            _ => panic!("Expected Page, got Part"),
+        }
 
         // Cleanup
         std::fs::remove_dir_all(&temp_dir).ok();
