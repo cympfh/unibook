@@ -16,8 +16,10 @@ pub struct Config {
 pub struct BookConfig {
     pub title: String,
     #[serde(default)]
+    #[allow(dead_code)]
     pub description: Option<String>,
     #[serde(default)]
+    #[allow(dead_code)]
     pub authors: Vec<String>,
     #[serde(default = "default_language")]
     pub language: String,
@@ -187,8 +189,11 @@ path = "page1.md"
                 title: "Test Book".to_string(),
                 description: None,
                 authors: vec![],
+                language: "en".to_string(),
+                theme: "light".to_string(),
             },
             build: BuildConfig::default(),
+            toc: TocConfig::default(),
             pages: vec![],
         };
         assert!(config.validate().is_err());

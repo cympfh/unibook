@@ -72,8 +72,8 @@ impl Book {
     }
 
     fn extract_sections(markdown_path: &Path) -> Result<Vec<Section>> {
-        let content = std::fs::read_to_string(markdown_path)
-            .context("Failed to read markdown file")?;
+        let content =
+            std::fs::read_to_string(markdown_path).context("Failed to read markdown file")?;
 
         let mut sections = Vec::new();
 
@@ -101,7 +101,8 @@ impl Book {
                     c.to_string()
                 } else {
                     // Percent encode the character
-                    c.to_string().bytes()
+                    c.to_string()
+                        .bytes()
                         .map(|b| format!("%{:02X}", b))
                         .collect::<String>()
                 }

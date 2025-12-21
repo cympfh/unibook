@@ -40,48 +40,68 @@ impl Builder {
 
         // Generate theme assets
         let theme_css_path = self.temp_dir.join("theme-style.html");
-        let theme_css = format!("<style>{}</style>", crate::search_assets::SearchAssets::theme_css());
-        fs::write(&theme_css_path, theme_css)
-            .context("Failed to write theme CSS")?;
+        let theme_css = format!(
+            "<style>{}</style>",
+            crate::search_assets::SearchAssets::theme_css()
+        );
+        fs::write(&theme_css_path, theme_css).context("Failed to write theme CSS")?;
 
         let theme_switcher_css_path = self.temp_dir.join("theme-switcher-style.html");
-        let theme_switcher_css = format!("<style>{}</style>", crate::search_assets::SearchAssets::theme_switcher_css());
+        let theme_switcher_css = format!(
+            "<style>{}</style>",
+            crate::search_assets::SearchAssets::theme_switcher_css()
+        );
         fs::write(&theme_switcher_css_path, theme_switcher_css)
             .context("Failed to write theme switcher CSS")?;
 
         let theme_meta_path = self.temp_dir.join("theme-meta.html");
-        let theme_meta = format!(r#"<meta name="unibook-theme" content="{}">"#, self.book.config.book.theme);
-        fs::write(&theme_meta_path, theme_meta)
-            .context("Failed to write theme meta")?;
+        let theme_meta = format!(
+            r#"<meta name="unibook-theme" content="{}">"#,
+            self.book.config.book.theme
+        );
+        fs::write(&theme_meta_path, theme_meta).context("Failed to write theme meta")?;
 
         let theme_switcher_html_path = self.temp_dir.join("theme-switcher.html");
-        fs::write(&theme_switcher_html_path, crate::search_assets::SearchAssets::theme_switcher_html())
-            .context("Failed to write theme switcher HTML")?;
+        fs::write(
+            &theme_switcher_html_path,
+            crate::search_assets::SearchAssets::theme_switcher_html(),
+        )
+        .context("Failed to write theme switcher HTML")?;
 
         let theme_switcher_js_path = self.temp_dir.join("theme-switcher-script.html");
-        let theme_switcher_js = format!("<script>{}</script>", crate::search_assets::SearchAssets::theme_switcher_js());
+        let theme_switcher_js = format!(
+            "<script>{}</script>",
+            crate::search_assets::SearchAssets::theme_switcher_js()
+        );
         fs::write(&theme_switcher_js_path, theme_switcher_js)
             .context("Failed to write theme switcher JS")?;
 
         // Generate search assets
         let search_html_path = self.temp_dir.join("search.html");
-        fs::write(&search_html_path, crate::search_assets::SearchAssets::html())
-            .context("Failed to write search HTML")?;
+        fs::write(
+            &search_html_path,
+            crate::search_assets::SearchAssets::html(),
+        )
+        .context("Failed to write search HTML")?;
 
         let search_css_path = self.temp_dir.join("search-style.html");
-        let search_css = format!("<style>{}</style>", crate::search_assets::SearchAssets::css());
-        fs::write(&search_css_path, search_css)
-            .context("Failed to write search CSS")?;
+        let search_css = format!(
+            "<style>{}</style>",
+            crate::search_assets::SearchAssets::css()
+        );
+        fs::write(&search_css_path, search_css).context("Failed to write search CSS")?;
 
         let search_js_path = self.temp_dir.join("search-script.html");
-        let search_js = format!("<script>{}</script>", crate::search_assets::SearchAssets::javascript());
-        fs::write(&search_js_path, search_js)
-            .context("Failed to write search JS")?;
+        let search_js = format!(
+            "<script>{}</script>",
+            crate::search_assets::SearchAssets::javascript()
+        );
+        fs::write(&search_js_path, search_js).context("Failed to write search JS")?;
 
         // Build each page
         let toc_gen = TocGenerator::new(
             self.book.config.book.title.clone(),
-            self.book.config.toc.show_sections.clone()
+            self.book.config.toc.show_sections.clone(),
         );
 
         for page in &self.book.pages {
@@ -151,16 +171,14 @@ impl Builder {
     }
 
     fn add_lang_attribute(&self, html_file: &Path) -> Result<()> {
-        let content = fs::read_to_string(html_file)
-            .context("Failed to read HTML file")?;
+        let content = fs::read_to_string(html_file).context("Failed to read HTML file")?;
 
         let modified = content.replace(
             "<html>",
-            &format!("<html lang=\"{}\">", self.book.config.book.language)
+            &format!("<html lang=\"{}\">", self.book.config.book.language),
         );
 
-        fs::write(html_file, modified)
-            .context("Failed to write HTML file with lang attribute")?;
+        fs::write(html_file, modified).context("Failed to write HTML file with lang attribute")?;
 
         Ok(())
     }

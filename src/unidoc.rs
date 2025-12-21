@@ -48,6 +48,7 @@ impl UnidocCommand {
         self
     }
 
+    #[allow(dead_code)]
     pub fn variable(mut self, key: String, value: String) -> Self {
         self.variables.push((key, value));
         self

@@ -7,7 +7,10 @@ pub struct TocGenerator {
 
 impl TocGenerator {
     pub fn new(book_title: String, show_sections: String) -> Self {
-        Self { book_title, show_sections }
+        Self {
+            book_title,
+            show_sections,
+        }
     }
 
     pub fn generate_toc_html(&self, pages: &[PageInfo], current_page: Option<&str>) -> String {
@@ -17,8 +20,12 @@ impl TocGenerator {
             "  <div class=\"toc-header\"><h2>{}</h2></div>\n",
             html_escape(&self.book_title)
         ));
-        html.push_str("  <button id=\"search-button\" class=\"search-button\" title=\"Search (Ctrl+K)\">\n");
-        html.push_str("    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\">\n");
+        html.push_str(
+            "  <button id=\"search-button\" class=\"search-button\" title=\"Search (Ctrl+K)\">\n",
+        );
+        html.push_str(
+            "    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\">\n",
+        );
         html.push_str("      <path d=\"M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z\"/>\n");
         html.push_str("    </svg>\n");
         html.push_str("    Search\n");
@@ -27,11 +34,7 @@ impl TocGenerator {
 
         for page in pages {
             let is_current = Some(page.output_filename.as_str()) == current_page;
-            let current_class = if is_current {
-                " class=\"current\""
-            } else {
-                ""
-            };
+            let current_class = if is_current { " class=\"current\"" } else { "" };
             html.push_str(&format!(
                 "    <li>\n      <a href=\"{}\"{}>{}</a>\n",
                 html_escape(&page.output_filename),
@@ -230,16 +233,19 @@ mod tests {
                 title: "Introduction".to_string(),
                 source_path: std::path::PathBuf::from("src/intro.md"),
                 output_filename: "intro.html".to_string(),
+                sections: vec![],
             },
             PageInfo {
                 title: "Chapter 1".to_string(),
                 source_path: std::path::PathBuf::from("src/chapter1.md"),
                 output_filename: "chapter1.html".to_string(),
+                sections: vec![],
             },
             PageInfo {
                 title: "Chapter 2".to_string(),
                 source_path: std::path::PathBuf::from("src/chapter2.md"),
                 output_filename: "chapter2.html".to_string(),
+                sections: vec![],
             },
         ]
     }
@@ -255,13 +261,13 @@ mod tests {
 
     #[test]
     fn test_toc_generator_new() {
-        let generator = TocGenerator::new("My Book".to_string());
+        let generator = TocGenerator::new("My Book".to_string(), "current".to_string());
         assert_eq!(generator.book_title, "My Book");
     }
 
     #[test]
     fn test_generate_toc_html_no_current() {
-        let generator = TocGenerator::new("Test Book".to_string());
+        let generator = TocGenerator::new("Test Book".to_string(), "current".to_string());
         let pages = create_test_pages();
         let html = generator.generate_toc_html(&pages, None);
 
@@ -279,7 +285,7 @@ mod tests {
 
     #[test]
     fn test_generate_toc_html_with_current() {
-        let generator = TocGenerator::new("Test Book".to_string());
+        let generator = TocGenerator::new("Test Book".to_string(), "current".to_string());
         let pages = create_test_pages();
         let html = generator.generate_toc_html(&pages, Some("chapter1.html"));
 
@@ -290,11 +296,12 @@ mod tests {
 
     #[test]
     fn test_generate_toc_html_escapes() {
-        let generator = TocGenerator::new("Test <Book>".to_string());
+        let generator = TocGenerator::new("Test <Book>".to_string(), "current".to_string());
         let pages = vec![PageInfo {
             title: "Chapter <1>".to_string(),
             source_path: std::path::PathBuf::from("src/ch1.md"),
             output_filename: "ch1.html".to_string(),
+            sections: vec![],
         }];
         let html = generator.generate_toc_html(&pages, None);
 
@@ -322,7 +329,7 @@ mod tests {
 
     #[test]
     fn test_toc_links_correct() {
-        let generator = TocGenerator::new("Test".to_string());
+        let generator = TocGenerator::new("Test".to_string(), "current".to_string());
         let pages = create_test_pages();
         let html = generator.generate_toc_html(&pages, None);
 

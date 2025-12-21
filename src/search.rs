@@ -32,8 +32,8 @@ impl SearchIndexGenerator {
         }
 
         let index = SearchIndex { pages: entries };
-        let json = serde_json::to_string_pretty(&index)
-            .context("Failed to serialize search index")?;
+        let json =
+            serde_json::to_string_pretty(&index).context("Failed to serialize search index")?;
 
         let index_path = output_dir.join("search-index.json");
         fs::write(&index_path, json).context("Failed to write search index")?;
@@ -79,9 +79,7 @@ impl SearchIndexGenerator {
                 .trim_start_matches('>') // Blockquotes
                 .replace("**", "") // Bold
                 .replace("__", "") // Bold
-                .replace('*', "") // Italic
-                .replace('_', "") // Italic
-                .replace('`', ""); // Inline code
+                .replace(['*', '_', '`'], ""); // Italic and inline code
 
             result.push_str(&cleaned);
             result.push(' ');

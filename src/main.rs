@@ -9,7 +9,7 @@ mod unidoc;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "unibook")]
@@ -74,7 +74,7 @@ fn run() -> Result<()> {
     }
 }
 
-fn build_book(dir: &PathBuf) -> Result<()> {
+fn build_book(dir: &Path) -> Result<()> {
     // Check if unidoc is available
     unidoc::check_unidoc_available()?;
 
@@ -196,7 +196,7 @@ Add more content here.
     Ok(())
 }
 
-fn serve_book(dir: &PathBuf, port: u16) -> Result<()> {
+fn serve_book(dir: &Path, port: u16) -> Result<()> {
     use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
     use std::sync::{Arc, mpsc::channel};
     use std::thread;
@@ -236,7 +236,7 @@ fn serve_book(dir: &PathBuf, port: u16) -> Result<()> {
     watcher.watch(&config_path, RecursiveMode::NonRecursive)?;
 
     // Spawn watcher thread
-    let dir_clone = dir.clone();
+    let dir_clone = dir.to_path_buf();
     let watcher_handle = thread::spawn(move || {
         let mut last_build = std::time::Instant::now();
 
@@ -318,7 +318,7 @@ fn serve_book(dir: &PathBuf, port: u16) -> Result<()> {
     Ok(())
 }
 
-fn watch_book(dir: &PathBuf, dev_mode: bool) -> Result<()> {
+fn watch_book(dir: &Path, dev_mode: bool) -> Result<()> {
     use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
     use std::sync::mpsc::channel;
     use std::time::Duration;

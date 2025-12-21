@@ -6,6 +6,9 @@ Markdownファイルから目次付きHTML書籍を生成するドキュメン�
 
 - 📚 **mdbook風のシンプルな設計** - 使いやすいコマンドラインインターフェース
 - 📑 **自動目次生成** - 全ページに左サイドバーの目次を自動追加
+- 🔍 **全文検索機能** - Ctrl+K でページ内を高速検索
+- 🌓 **カラーテーマ** - ライト/ダークモード対応
+- 📂 **H2セクション表示** - 目次にH2見出しを表示可能
 - 🔄 **ライブリロード** - ファイル変更を監視して自動再ビルド
 - 🌐 **HTTPサーバー内蔵** - 開発用のローカルサーバー搭載
 - ⚡ **高速** - Rust製で軽量・高速
@@ -74,10 +77,19 @@ unibook serve
 title = "私の書籍"              # 書籍のタイトル
 description = "書籍の説明"      # 説明（オプション）
 authors = ["著者名"]            # 著者（オプション）
+language = "ja"                 # 言語（デフォルト: ja）
+theme = "light"                 # カラーテーマ: "light" または "dark" (デフォルト: light)
 
 [build]
 src_dir = "src"                 # ソースディレクトリ（デフォルト: src）
-output_dir = "docs"              # 出力ディレクトリ（デフォルト: docs）
+output_dir = "docs"             # 出力ディレクトリ（デフォルト: docs）
+
+[toc]
+# H2セクションの表示設定
+# - "current": 現在のページのみH2を表示（デフォルト）
+# - "always": すべてのページでH2を表示
+# - "never": H2を表示しない
+show_sections = "current"
 
 # ページの定義（この順番で目次に表示されます）
 [[pages]]
@@ -136,6 +148,7 @@ unibook serve -d ../docs   # 別のディレクトリ
 ```bash
 unibook watch              # カレントディレクトリを監視
 unibook watch -d ../docs   # 別のディレクトリ
+unibook watch --dev        # 開発モード（unibookソースコード自体のホットリロード）
 ```
 
 ## 開発ワークフロー
@@ -169,6 +182,43 @@ CI/CDや本番環境では：
 unibook build
 ```
 
+## 機能詳細
+
+### 全文検索
+
+生成されたHTMLには全文検索機能が組み込まれています：
+
+- **Ctrl+K** で検索ダイアログを開く
+- サイドバーの検索ボタンをクリック
+- タイトルと本文から検索
+- リアルタイムでフィルタリング
+
+### カラーテーマ
+
+`book.toml` で初期テーマを設定できます：
+
+```toml
+[book]
+theme = "light"  # または "dark"
+```
+
+生成されたHTMLでテーマ切り替えボタンから変更可能です。
+
+### H2セクション表示
+
+目次にH2見出しを表示するかどうかを制御できます：
+
+```toml
+[toc]
+show_sections = "current"  # 現在のページのみ（デフォルト）
+# show_sections = "always"   # すべてのページで表示
+# show_sections = "never"    # 表示しない
+```
+
+- **current**: 現在開いているページのH2見出しのみ表示
+- **always**: すべてのページのH2見出しを常に表示
+- **never**: H2見出しを表示しない
+
 ## 出力例
 
 生成されるHTML構造：
@@ -184,6 +234,9 @@ docs/
 各HTMLファイルには：
 - 左サイドバーに全ページの目次
 - 現在のページがハイライト表示
+- H2見出しのセクション表示（設定により制御可能）
+- 全文検索機能（Ctrl+K または検索ボタン）
+- カラーテーマ切り替え
 - レスポンシブデザイン（スマホ対応）
 
 ## トラブルシューティング
@@ -234,6 +287,12 @@ unibook serve --port 3001
 ## Contributing
 
 Issue や Pull Request は大歓迎です！
+
+## @CLAUDE
+
+- Rust, rustc 1.92.0
+    - cargo fmt --all -- --check
+    - cargo clippy --all-targets --all-features -- -D warnings
 
 ---
 
