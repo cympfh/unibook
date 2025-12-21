@@ -113,11 +113,19 @@ impl Builder {
 
             // Generate TOC with current page highlighted
             let toc_html = toc_gen.generate_toc_html(&self.book.pages, Some(&page.output_filename));
-            let toc_path = self.temp_dir.join(format!("toc-{}.html", page.slug()));
+            // Replace path separators in slug to avoid creating subdirectories in temp_dir
+            let slug = page.slug().replace(['/', '\\'], "_");
+            let toc_path = self.temp_dir.join(format!("toc-{}.html", slug));
             fs::write(&toc_path, toc_html).context("Failed to write TOC file")?;
 
             // Build unidoc command
             let output_file = output_dir.join(&page.output_filename);
+
+            // Create parent directories if they don't exist
+            if let Some(parent) = output_file.parent() {
+                fs::create_dir_all(parent).context("Failed to create output subdirectories")?;
+            }
+
             UnidocCommand::new()
                 .standalone()
                 .include_in_header(theme_meta_path.clone())

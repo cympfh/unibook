@@ -293,6 +293,7 @@ Issue や Pull Request は大歓迎です！
 - Rust, rustc 1.92.0
     - cargo fmt --all -- --check
     - cargo clippy --all-targets --all-features -- -D warnings
+- Check @TODO.md
 
 ---
 

@@ -36,7 +36,7 @@ impl TocGenerator {
             let is_current = Some(page.output_filename.as_str()) == current_page;
             let current_class = if is_current { " class=\"current\"" } else { "" };
             html.push_str(&format!(
-                "    <li>\n      <a href=\"{}\"{}>{}</a>\n",
+                "    <li>\n      <a href=\"/{}\"{}>{}</a>\n",
                 html_escape(&page.output_filename),
                 current_class,
                 html_escape(&page.title)
@@ -54,7 +54,7 @@ impl TocGenerator {
                 html.push_str("      <ul class=\"toc-sections\">\n");
                 for section in &page.sections {
                     html.push_str(&format!(
-                        "        <li><a href=\"{}#{}\">{}</a></li>\n",
+                        "        <li><a href=\"/{}#{}\">{}</a></li>\n",
                         html_escape(&page.output_filename),
                         html_escape(&section.id),
                         html_escape(&section.title)
@@ -276,9 +276,9 @@ mod tests {
         assert!(html.contains("Introduction"));
         assert!(html.contains("Chapter 1"));
         assert!(html.contains("Chapter 2"));
-        assert!(html.contains("href=\"intro.html\""));
-        assert!(html.contains("href=\"chapter1.html\""));
-        assert!(html.contains("href=\"chapter2.html\""));
+        assert!(html.contains("href=\"/intro.html\""));
+        assert!(html.contains("href=\"/chapter1.html\""));
+        assert!(html.contains("href=\"/chapter2.html\""));
         assert!(!html.contains("class=\"current\""));
         assert!(html.contains("<div id=\"content-wrapper\">"));
     }
@@ -289,9 +289,9 @@ mod tests {
         let pages = create_test_pages();
         let html = generator.generate_toc_html(&pages, Some("chapter1.html"));
 
-        assert!(html.contains("href=\"chapter1.html\" class=\"current\""));
-        assert!(!html.contains("href=\"intro.html\" class=\"current\""));
-        assert!(!html.contains("href=\"chapter2.html\" class=\"current\""));
+        assert!(html.contains("href=\"/chapter1.html\" class=\"current\""));
+        assert!(!html.contains("href=\"/intro.html\" class=\"current\""));
+        assert!(!html.contains("href=\"/chapter2.html\" class=\"current\""));
     }
 
     #[test]
@@ -334,8 +334,8 @@ mod tests {
         let html = generator.generate_toc_html(&pages, None);
 
         // Check that all links are present and correctly formatted
-        assert!(html.contains("<a href=\"intro.html\">Introduction</a>"));
-        assert!(html.contains("<a href=\"chapter1.html\">Chapter 1</a>"));
-        assert!(html.contains("<a href=\"chapter2.html\">Chapter 2</a>"));
+        assert!(html.contains("<a href=\"/intro.html\">Introduction</a>"));
+        assert!(html.contains("<a href=\"/chapter1.html\">Chapter 1</a>"));
+        assert!(html.contains("<a href=\"/chapter2.html\">Chapter 2</a>"));
     }
 }

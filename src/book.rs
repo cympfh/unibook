@@ -56,18 +56,13 @@ impl Book {
     }
 
     fn source_to_html_filename(source_path: &str) -> Result<String> {
-        let path = Path::new(source_path);
-        let filename = path
-            .file_name()
-            .context("Invalid source path")?
-            .to_str()
-            .context("Invalid UTF-8 in filename")?;
-
-        if !filename.ends_with(".md") {
-            anyhow::bail!("Source file must have .md extension: {}", filename);
+        // Validate that the source path ends with .md
+        if !source_path.ends_with(".md") {
+            anyhow::bail!("Source file must have .md extension: {}", source_path);
         }
 
-        let html_filename = filename.replace(".md", ".html");
+        // Replace .md with .html while preserving directory structure
+        let html_filename = source_path.replace(".md", ".html");
         Ok(html_filename)
     }
 
@@ -164,6 +159,12 @@ mod tests {
         assert_eq!(
             Book::source_to_html_filename("chapter1.md").unwrap(),
             "chapter1.html"
+        );
+        // Test subdirectory paths
+        assert_eq!(Book::source_to_html_filename("a/b.md").unwrap(), "a/b.html");
+        assert_eq!(
+            Book::source_to_html_filename("foo/bar/baz.md").unwrap(),
+            "foo/bar/baz.html"
         );
     }
 
