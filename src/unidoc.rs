@@ -8,6 +8,7 @@ pub struct UnidocCommand {
     includes_before: Vec<PathBuf>,
     includes_after: Vec<PathBuf>,
     output: Option<PathBuf>,
+    variables: Vec<(String, String)>,
 }
 
 impl UnidocCommand {
@@ -18,6 +19,7 @@ impl UnidocCommand {
             includes_before: Vec::new(),
             includes_after: Vec::new(),
             output: None,
+            variables: Vec::new(),
         }
     }
 
@@ -46,6 +48,11 @@ impl UnidocCommand {
         self
     }
 
+    pub fn variable(mut self, key: String, value: String) -> Self {
+        self.variables.push((key, value));
+        self
+    }
+
     pub fn execute(&self, input: &Path) -> Result<()> {
         let mut cmd = Command::new("unidoc");
 
@@ -63,6 +70,10 @@ impl UnidocCommand {
 
         for after in &self.includes_after {
             cmd.arg("-A").arg(after);
+        }
+
+        for (key, value) in &self.variables {
+            cmd.arg("-V").arg(format!("{}:{}", key, value));
         }
 
         if let Some(output) = &self.output {

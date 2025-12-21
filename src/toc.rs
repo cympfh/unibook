@@ -2,11 +2,12 @@ use crate::book::PageInfo;
 
 pub struct TocGenerator {
     book_title: String,
+    show_sections: String,
 }
 
 impl TocGenerator {
-    pub fn new(book_title: String) -> Self {
-        Self { book_title }
+    pub fn new(book_title: String, show_sections: String) -> Self {
+        Self { book_title, show_sections }
     }
 
     pub fn generate_toc_html(&self, pages: &[PageInfo], current_page: Option<&str>) -> String {
@@ -25,17 +26,41 @@ impl TocGenerator {
         html.push_str("  <ul class=\"toc-list\">\n");
 
         for page in pages {
-            let current_class = if Some(page.output_filename.as_str()) == current_page {
+            let is_current = Some(page.output_filename.as_str()) == current_page;
+            let current_class = if is_current {
                 " class=\"current\""
             } else {
                 ""
             };
             html.push_str(&format!(
-                "    <li><a href=\"{}\"{}>{}</a></li>\n",
+                "    <li>\n      <a href=\"{}\"{}>{}</a>\n",
                 html_escape(&page.output_filename),
                 current_class,
                 html_escape(&page.title)
             ));
+
+            // Add sections based on show_sections setting
+            let should_show = match self.show_sections.as_str() {
+                "always" => true,
+                "current" => is_current,
+                "never" => false,
+                _ => is_current, // default to "current"
+            };
+
+            if should_show && !page.sections.is_empty() {
+                html.push_str("      <ul class=\"toc-sections\">\n");
+                for section in &page.sections {
+                    html.push_str(&format!(
+                        "        <li><a href=\"{}#{}\">{}</a></li>\n",
+                        html_escape(&page.output_filename),
+                        html_escape(&section.id),
+                        html_escape(&section.title)
+                    ));
+                }
+                html.push_str("      </ul>\n");
+            }
+
+            html.push_str("    </li>\n");
         }
 
         html.push_str("  </ul>\n");
@@ -119,12 +144,13 @@ body {
   margin: 5px 0;
 }
 
-.toc-list a {
+.toc-list > li > a {
   display: block;
   padding: 8px 12px;
   text-decoration: none;
   color: #333;
   border-radius: 4px;
+  font-weight: 500;
   transition: background 0.2s;
 }
 
@@ -136,6 +162,32 @@ body {
   background: #d0d0d0;
   font-weight: bold;
   color: #000;
+}
+
+/* Section (H2) styling */
+.toc-sections {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 0;
+}
+
+.toc-sections li {
+  margin: 2px 0;
+}
+
+.toc-sections a {
+  display: block;
+  padding: 6px 12px 6px 24px;
+  text-decoration: none;
+  color: #555;
+  border-radius: 4px;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.toc-sections a:hover {
+  background: #e8e8e8;
+  color: #333;
 }
 
 @media (max-width: 768px) {

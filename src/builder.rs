@@ -54,7 +54,10 @@ impl Builder {
             .context("Failed to write search JS")?;
 
         // Build each page
-        let toc_gen = TocGenerator::new(self.book.config.book.title.clone());
+        let toc_gen = TocGenerator::new(
+            self.book.config.book.title.clone(),
+            self.book.config.toc.show_sections.clone()
+        );
 
         for page in &self.book.pages {
             println!(
@@ -78,9 +81,12 @@ impl Builder {
                 .include_before_body(search_html_path.clone())
                 .include_after_body(search_js_path.clone())
                 .include_after_body(wrapper_end_path.clone())
-                .output(output_file)
+                .output(output_file.clone())
                 .execute(&page.source_path)
                 .context(format!("Failed to build page: {}", page.title))?;
+
+            // Add lang attribute to HTML
+            self.add_lang_attribute(&output_file)?;
         }
 
         // Generate search index
@@ -111,6 +117,21 @@ impl Builder {
 
         println!("\nBuild complete! Output in: {}", output_dir.display());
         self.cleanup()?;
+        Ok(())
+    }
+
+    fn add_lang_attribute(&self, html_file: &Path) -> Result<()> {
+        let content = fs::read_to_string(html_file)
+            .context("Failed to read HTML file")?;
+
+        let modified = content.replace(
+            "<html>",
+            &format!("<html lang=\"{}\">", self.book.config.book.language)
+        );
+
+        fs::write(html_file, modified)
+            .context("Failed to write HTML file with lang attribute")?;
+
         Ok(())
     }
 

@@ -7,6 +7,8 @@ pub struct Config {
     pub book: BookConfig,
     #[serde(default)]
     pub build: BuildConfig,
+    #[serde(default)]
+    pub toc: TocConfig,
     pub pages: Vec<PageConfig>,
 }
 
@@ -17,6 +19,12 @@ pub struct BookConfig {
     pub description: Option<String>,
     #[serde(default)]
     pub authors: Vec<String>,
+    #[serde(default = "default_language")]
+    pub language: String,
+}
+
+fn default_language() -> String {
+    "ja".to_string()
 }
 
 #[derive(Debug, Deserialize)]
@@ -25,6 +33,20 @@ pub struct BuildConfig {
     pub src_dir: PathBuf,
     #[serde(default = "default_output_dir")]
     pub output_dir: PathBuf,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TocConfig {
+    /// When to show H2 sections in TOC
+    /// - "always": Show sections for all pages
+    /// - "current": Show sections only for current page (default)
+    /// - "never": Never show sections
+    #[serde(default = "default_show_sections")]
+    pub show_sections: String,
+}
+
+fn default_show_sections() -> String {
+    "current".to_string()
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -46,6 +68,14 @@ impl Default for BuildConfig {
         Self {
             src_dir: default_src_dir(),
             output_dir: default_output_dir(),
+        }
+    }
+}
+
+impl Default for TocConfig {
+    fn default() -> Self {
+        Self {
+            show_sections: default_show_sections(),
         }
     }
 }

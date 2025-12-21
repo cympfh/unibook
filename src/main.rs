@@ -119,10 +119,17 @@ fn init_book(dir: &PathBuf) -> Result<()> {
 title = "My Book"
 description = "A book built with unibook"
 authors = ["Your Name"]
+language = "en"
 
 [build]
 src_dir = "src"
 output_dir = "docs"
+
+[toc]
+# When to show H2 sections in table of contents
+# Options: "always", "current", "never"
+# Default: "current" (show only for current page)
+show_sections = "current"
 
 [[pages]]
 title = "Introduction"

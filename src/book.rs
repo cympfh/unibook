@@ -13,6 +13,13 @@ pub struct PageInfo {
     pub title: String,
     pub source_path: PathBuf,
     pub output_filename: String,
+    pub sections: Vec<Section>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Section {
+    pub title: String,
+    pub id: String,
 }
 
 impl Book {
@@ -34,10 +41,14 @@ impl Book {
             // Convert path to output filename (e.g., intro.md -> intro.html)
             let output_filename = Self::source_to_html_filename(&page_config.path)?;
 
+            // Extract H2 sections from markdown
+            let sections = Self::extract_sections(&source_path)?;
+
             pages.push(PageInfo {
                 title: page_config.title.clone(),
                 source_path,
                 output_filename,
+                sections,
             });
         }
 
@@ -60,6 +71,44 @@ impl Book {
         Ok(html_filename)
     }
 
+    fn extract_sections(markdown_path: &Path) -> Result<Vec<Section>> {
+        let content = std::fs::read_to_string(markdown_path)
+            .context("Failed to read markdown file")?;
+
+        let mut sections = Vec::new();
+
+        for line in content.lines() {
+            // Check if line is an H2 heading (## Title)
+            if let Some(title) = line.strip_prefix("## ") {
+                let title = title.trim().to_string();
+                // Generate ID matching unidoc's format: "2-Title"
+                // unidoc percent-encodes all except alphanumeric, '-', and '_'
+                let id = format!("2-{}", Self::percent_encode(&title));
+                sections.push(Section { title, id });
+            }
+        }
+
+        Ok(sections)
+    }
+
+    fn percent_encode(input: &str) -> String {
+        // Match unidoc's encoding: NON_ALPHANUMERIC minus '-' and '_'
+        // This means: encode everything except [a-zA-Z0-9-_]
+        input
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                    c.to_string()
+                } else {
+                    // Percent encode the character
+                    c.to_string().bytes()
+                        .map(|b| format!("%{:02X}", b))
+                        .collect::<String>()
+                }
+            })
+            .collect()
+    }
+
     pub fn output_dir(&self, base_dir: &Path) -> PathBuf {
         base_dir.join(&self.config.build.output_dir)
     }
@@ -74,7 +123,7 @@ impl PageInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{BookConfig, BuildConfig, Config, PageConfig};
+    use crate::config::{BookConfig, BuildConfig, Config, PageConfig, TocConfig};
 
     fn create_test_config() -> Config {
         Config {
@@ -82,10 +131,14 @@ mod tests {
                 title: "Test Book".to_string(),
                 description: None,
                 authors: vec![],
+                language: "en".to_string(),
             },
             build: BuildConfig {
                 src_dir: PathBuf::from("src"),
                 output_dir: PathBuf::from("docs"),
+            },
+            toc: TocConfig {
+                show_sections: "current".to_string(),
             },
             pages: vec![
                 PageConfig {
@@ -159,6 +212,7 @@ mod tests {
             title: "Test Page".to_string(),
             source_path: PathBuf::from("test.md"),
             output_filename: "test.html".to_string(),
+            sections: vec![],
         };
         assert_eq!(page.slug(), "test");
     }
