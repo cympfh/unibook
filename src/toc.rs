@@ -111,6 +111,7 @@ body {
   padding: 20px;
   border-right: 1px solid var(--border-color);
   box-sizing: border-box;
+  transition: transform 0.3s ease;
 }
 
 #content-wrapper {
@@ -120,6 +121,7 @@ body {
   width: 100%;
   box-sizing: border-box;
   background: var(--bg-primary);
+  transition: margin-left 0.3s ease;
 }
 
 .toc-header h2 {

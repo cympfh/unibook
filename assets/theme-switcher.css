@@ -1,13 +1,14 @@
 .theme-switcher {
   position: relative;
   margin-bottom: 10px;
+  z-index: 2000;
 }
 
 .theme-button {
   width: 100%;
   padding: 10px 12px;
   background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  border: 0px solid var(--border-color);
   border-radius: 5px;
   cursor: pointer;
   display: flex;
@@ -38,7 +39,7 @@
   border: 1px solid var(--border-color);
   border-radius: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 2001;
   overflow: hidden;
 }
 

@@ -1,0 +1,60 @@
+.toc-toggle {
+  float: left;
+  width: 40px;
+  height: 40px;
+  padding: 10px;
+  margin-right: 8px;
+  background: var(--bg-primary);
+  border: 0px solid var(--border-color);
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.toc-toggle:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.toc-toggle svg {
+  flex-shrink: 0;
+}
+
+/* Position theme-switcher next to toc-toggle */
+#theme-switcher {
+  float: left;
+  margin-bottom: 10px;
+}
+
+/* Page controls container */
+.page-controls {
+  margin-bottom: 20px;
+}
+
+.page-controls::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Sidebar hide/show animation */
+body.sidebar-hidden #toc-sidebar {
+  transform: translateX(-250px);
+}
+
+body.sidebar-hidden #content-wrapper {
+  margin-left: 0;
+}
+
+#toc-sidebar {
+  transition: transform 0.3s ease;
+}
+
+#content-wrapper {
+  transition: margin-left 0.3s ease;
+}

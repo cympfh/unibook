@@ -76,6 +76,44 @@ impl Builder {
         fs::write(&theme_switcher_js_path, theme_switcher_js)
             .context("Failed to write theme switcher JS")?;
 
+        // Generate TOC toggle assets
+        let toc_toggle_css_path = self.temp_dir.join("toc-toggle-style.html");
+        let toc_toggle_css = format!(
+            "<style>{}</style>",
+            crate::search_assets::SearchAssets::toc_toggle_css()
+        );
+        fs::write(&toc_toggle_css_path, toc_toggle_css)
+            .context("Failed to write TOC toggle CSS")?;
+
+        let toc_toggle_html_path = self.temp_dir.join("toc-toggle.html");
+        fs::write(
+            &toc_toggle_html_path,
+            crate::search_assets::SearchAssets::toc_toggle_html(),
+        )
+        .context("Failed to write TOC toggle HTML")?;
+
+        let toc_toggle_js_path = self.temp_dir.join("toc-toggle-script.html");
+        let toc_toggle_js = format!(
+            "<script>{}</script>",
+            crate::search_assets::SearchAssets::toc_toggle_js()
+        );
+        fs::write(&toc_toggle_js_path, toc_toggle_js).context("Failed to write TOC toggle JS")?;
+
+        // Generate page controls wrapper
+        let page_controls_start_path = self.temp_dir.join("page-controls-start.html");
+        fs::write(
+            &page_controls_start_path,
+            crate::search_assets::SearchAssets::page_controls_start(),
+        )
+        .context("Failed to write page controls start")?;
+
+        let page_controls_end_path = self.temp_dir.join("page-controls-end.html");
+        fs::write(
+            &page_controls_end_path,
+            crate::search_assets::SearchAssets::page_controls_end(),
+        )
+        .context("Failed to write page controls end")?;
+
         // Generate search assets
         let search_html_path = self.temp_dir.join("search.html");
         fs::write(
@@ -136,13 +174,18 @@ impl Builder {
                 .include_in_header(theme_meta_path.clone())
                 .include_in_header(theme_css_path.clone())
                 .include_in_header(theme_switcher_css_path.clone())
+                .include_in_header(toc_toggle_css_path.clone())
                 .include_in_header(css_path.clone())
                 .include_in_header(search_css_path.clone())
                 .include_before_body(toc_path)
+                .include_before_body(page_controls_start_path.clone())
+                .include_before_body(toc_toggle_html_path.clone())
                 .include_before_body(theme_switcher_html_path.clone())
+                .include_before_body(page_controls_end_path.clone())
                 .include_before_body(search_html_path.clone())
                 .include_after_body(theme_switcher_js_path.clone())
                 .include_after_body(search_js_path.clone())
+                .include_after_body(toc_toggle_js_path.clone())
                 .include_after_body(wrapper_end_path.clone())
                 .output(output_file.clone())
                 .execute(&page.source_path)

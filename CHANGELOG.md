@@ -2,6 +2,21 @@
 
 ## 新機能 (2025-12-21)
 
+- **サイドバー（目次）トグルボタン**: サイドバーの表示/非表示を切り替えられるトグルボタンを追加
+  - ハンバーガーメニューアイコン（☰）をクリックするとサイドバーがスライドアウト/イン
+  - テーマ切り替えボタンの左隣に配置（デザインリニューアル）
+  - 開閉状態は localStorage に保存され、ページ遷移後も保持されます
+  - スムーズなアニメーション効果（0.3秒のトランジション）
+  - 新規アセット:
+    - `assets/toc-toggle.html`: トグルボタンのHTML構造
+    - `assets/toc-toggle.css`: トグルボタンとサイドバーアニメーションのスタイル
+    - `assets/toc-toggle.js`: トグル機能とlocalStorageの実装
+    - `assets/page-controls-start.html`, `assets/page-controls-end.html`: ボタン配置用コンテナ
+  - ボタンはボーダーレスでフラットなデザインに統一
+  - 変更されたファイル: `src/builder.rs`, `src/search_assets.rs`, `src/toc.rs`, `assets/theme-switcher.css`
+
+## 新機能 (2025-12-21)
+
 - **Part階層のサポート**: 目次でchapterより上の階層（part）を表現できるようになりました
   - `book.toml` で `path` を指定しない `[[pages]]` エントリを part として扱います
   - part は目次に太字・uppercaseで表示され、リンクはありません（見出しのみ）
