@@ -120,6 +120,8 @@ title = "My Book"
 description = "A book built with unibook"
 authors = ["Your Name"]
 language = "en"
+# Theme: light, dark, solarized-light, solarized-dark, kanagawa-light, kanagawa-dark
+theme = "light"
 
 [build]
 src_dir = "src"

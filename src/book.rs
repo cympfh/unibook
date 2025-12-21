@@ -132,6 +132,7 @@ mod tests {
                 description: None,
                 authors: vec![],
                 language: "en".to_string(),
+                theme: "light".to_string(),
             },
             build: BuildConfig {
                 src_dir: PathBuf::from("src"),

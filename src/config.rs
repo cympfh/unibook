@@ -21,6 +21,12 @@ pub struct BookConfig {
     pub authors: Vec<String>,
     #[serde(default = "default_language")]
     pub language: String,
+    #[serde(default = "default_theme")]
+    pub theme: String,
+}
+
+fn default_theme() -> String {
+    "light".to_string()
 }
 
 fn default_language() -> String {

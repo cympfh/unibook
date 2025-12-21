@@ -79,6 +79,9 @@ body {
   margin: 0;
   padding: 0;
   display: flex;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #toc-sidebar {
@@ -88,9 +91,9 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  background: #f4f4f4;
+  background: var(--bg-secondary);
   padding: 20px;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid var(--border-color);
   box-sizing: border-box;
 }
 
@@ -100,34 +103,35 @@ body {
   max-width: 900px;
   width: 100%;
   box-sizing: border-box;
+  background: var(--bg-primary);
 }
 
 .toc-header h2 {
   margin-top: 0;
   font-size: 1.5em;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .search-button {
   width: 100%;
   padding: 10px 12px;
   margin-bottom: 20px;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 5px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
 .search-button:hover {
-  background: #f8f8f8;
-  border-color: #999;
-  color: #333;
+  background: var(--bg-hover);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .search-button svg {
@@ -148,20 +152,20 @@ body {
   display: block;
   padding: 8px 12px;
   text-decoration: none;
-  color: #333;
+  color: var(--text-primary);
   border-radius: 4px;
   font-weight: 500;
   transition: background 0.2s;
 }
 
 .toc-list a:hover {
-  background: #e0e0e0;
+  background: var(--bg-hover);
 }
 
 .toc-list a.current {
-  background: #d0d0d0;
+  background: var(--bg-active);
   font-weight: bold;
-  color: #000;
+  color: var(--text-primary);
 }
 
 /* Section (H2) styling */
@@ -179,15 +183,15 @@ body {
   display: block;
   padding: 6px 12px 6px 24px;
   text-decoration: none;
-  color: #555;
+  color: var(--text-secondary);
   border-radius: 4px;
   font-size: 0.9em;
   transition: background 0.2s;
 }
 
 .toc-sections a:hover {
-  background: #e8e8e8;
-  color: #333;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {

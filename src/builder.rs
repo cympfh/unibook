@@ -38,6 +38,31 @@ impl Builder {
         fs::write(&wrapper_end_path, TocGenerator::generate_wrapper_end())
             .context("Failed to write wrapper end file")?;
 
+        // Generate theme assets
+        let theme_css_path = self.temp_dir.join("theme-style.html");
+        let theme_css = format!("<style>{}</style>", crate::search_assets::SearchAssets::theme_css());
+        fs::write(&theme_css_path, theme_css)
+            .context("Failed to write theme CSS")?;
+
+        let theme_switcher_css_path = self.temp_dir.join("theme-switcher-style.html");
+        let theme_switcher_css = format!("<style>{}</style>", crate::search_assets::SearchAssets::theme_switcher_css());
+        fs::write(&theme_switcher_css_path, theme_switcher_css)
+            .context("Failed to write theme switcher CSS")?;
+
+        let theme_meta_path = self.temp_dir.join("theme-meta.html");
+        let theme_meta = format!(r#"<meta name="unibook-theme" content="{}">"#, self.book.config.book.theme);
+        fs::write(&theme_meta_path, theme_meta)
+            .context("Failed to write theme meta")?;
+
+        let theme_switcher_html_path = self.temp_dir.join("theme-switcher.html");
+        fs::write(&theme_switcher_html_path, crate::search_assets::SearchAssets::theme_switcher_html())
+            .context("Failed to write theme switcher HTML")?;
+
+        let theme_switcher_js_path = self.temp_dir.join("theme-switcher-script.html");
+        let theme_switcher_js = format!("<script>{}</script>", crate::search_assets::SearchAssets::theme_switcher_js());
+        fs::write(&theme_switcher_js_path, theme_switcher_js)
+            .context("Failed to write theme switcher JS")?;
+
         // Generate search assets
         let search_html_path = self.temp_dir.join("search.html");
         fs::write(&search_html_path, crate::search_assets::SearchAssets::html())
@@ -75,10 +100,15 @@ impl Builder {
             let output_file = output_dir.join(&page.output_filename);
             UnidocCommand::new()
                 .standalone()
+                .include_in_header(theme_meta_path.clone())
+                .include_in_header(theme_css_path.clone())
+                .include_in_header(theme_switcher_css_path.clone())
                 .include_in_header(css_path.clone())
                 .include_in_header(search_css_path.clone())
                 .include_before_body(toc_path)
+                .include_before_body(theme_switcher_html_path.clone())
                 .include_before_body(search_html_path.clone())
+                .include_after_body(theme_switcher_js_path.clone())
                 .include_after_body(search_js_path.clone())
                 .include_after_body(wrapper_end_path.clone())
                 .output(output_file.clone())
