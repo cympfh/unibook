@@ -16,6 +16,12 @@ impl TocGenerator {
             "  <div class=\"toc-header\"><h2>{}</h2></div>\n",
             html_escape(&self.book_title)
         ));
+        html.push_str("  <button id=\"search-button\" class=\"search-button\" title=\"Search (Ctrl+K)\">\n");
+        html.push_str("    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\">\n");
+        html.push_str("      <path d=\"M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z\"/>\n");
+        html.push_str("    </svg>\n");
+        html.push_str("    Search\n");
+        html.push_str("  </button>\n");
         html.push_str("  <ul class=\"toc-list\">\n");
 
         for page in pages {
@@ -75,6 +81,32 @@ body {
   margin-top: 0;
   font-size: 1.5em;
   color: #333;
+}
+
+.search-button {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 20px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.search-button:hover {
+  background: #f8f8f8;
+  border-color: #999;
+  color: #333;
+}
+
+.search-button svg {
+  flex-shrink: 0;
 }
 
 .toc-list {

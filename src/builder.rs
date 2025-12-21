@@ -38,6 +38,21 @@ impl Builder {
         fs::write(&wrapper_end_path, TocGenerator::generate_wrapper_end())
             .context("Failed to write wrapper end file")?;
 
+        // Generate search assets
+        let search_html_path = self.temp_dir.join("search.html");
+        fs::write(&search_html_path, crate::search_assets::SearchAssets::html())
+            .context("Failed to write search HTML")?;
+
+        let search_css_path = self.temp_dir.join("search-style.html");
+        let search_css = format!("<style>{}</style>", crate::search_assets::SearchAssets::css());
+        fs::write(&search_css_path, search_css)
+            .context("Failed to write search CSS")?;
+
+        let search_js_path = self.temp_dir.join("search-script.html");
+        let search_js = format!("<script>{}</script>", crate::search_assets::SearchAssets::javascript());
+        fs::write(&search_js_path, search_js)
+            .context("Failed to write search JS")?;
+
         // Build each page
         let toc_gen = TocGenerator::new(self.book.config.book.title.clone());
 
@@ -58,12 +73,20 @@ impl Builder {
             UnidocCommand::new()
                 .standalone()
                 .include_in_header(css_path.clone())
+                .include_in_header(search_css_path.clone())
                 .include_before_body(toc_path)
+                .include_before_body(search_html_path.clone())
+                .include_after_body(search_js_path.clone())
                 .include_after_body(wrapper_end_path.clone())
                 .output(output_file)
                 .execute(&page.source_path)
                 .context(format!("Failed to build page: {}", page.title))?;
         }
+
+        // Generate search index
+        println!("Generating search index...");
+        crate::search::SearchIndexGenerator::generate(&self.book, &output_dir)
+            .context("Failed to generate search index")?;
 
         // Generate index.html that redirects to first page
         if let Some(first_page) = self.book.pages.first() {

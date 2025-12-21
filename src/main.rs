@@ -1,6 +1,8 @@
 mod book;
 mod builder;
 mod config;
+mod search;
+mod search_assets;
 mod toc;
 mod unidoc;
 
