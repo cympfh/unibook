@@ -223,6 +223,39 @@ body {
   color: var(--text-primary);
 }
 
+/* Table styling */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  border: 1px solid var(--border-color);
+}
+
+table th,
+table td {
+  padding: 8px 12px;
+  text-align: left;
+  border: 1px solid var(--border-color);
+}
+
+table thead th {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+table tbody tr:nth-child(even) {
+  background: var(--bg-secondary);
+}
+
+table tbody tr:nth-child(odd) {
+  background: var(--bg-primary);
+}
+
+table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
 @media (max-width: 768px) {
   #toc-sidebar {
     position: static;
