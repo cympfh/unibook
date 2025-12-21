@@ -55,7 +55,7 @@ my-book/
 unibook build
 ```
 
-`doc/` ディレクトリにHTMLファイルが生成されます。
+`docs/` ディレクトリにHTMLファイルが生成されます。
 
 ### 3. 開発サーバーで確認
 
@@ -77,7 +77,7 @@ authors = ["著者名"]            # 著者（オプション）
 
 [build]
 src_dir = "src"                 # ソースディレクトリ（デフォルト: src）
-output_dir = "doc"              # 出力ディレクトリ（デフォルト: doc）
+output_dir = "docs"              # 出力ディレクトリ（デフォルト: docs）
 
 # ページの定義（この順番で目次に表示されます）
 [[pages]]
@@ -174,7 +174,7 @@ unibook build
 生成されるHTML構造：
 
 ```
-doc/
+docs/
 ├── index.html      # トップページ（自動生成、最初のページにリダイレクト）
 ├── intro.html      # イントロダクション
 ├── chapter1.html   # 第1章

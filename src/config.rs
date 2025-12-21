@@ -38,7 +38,7 @@ fn default_src_dir() -> PathBuf {
 }
 
 fn default_output_dir() -> PathBuf {
-    PathBuf::from("doc")
+    PathBuf::from("docs")
 }
 
 impl Default for BuildConfig {
@@ -125,7 +125,7 @@ path = "page1.md"
 "#;
         let config: Config = toml::from_str(toml_content).unwrap();
         assert_eq!(config.build.src_dir, PathBuf::from("src"));
-        assert_eq!(config.build.output_dir, PathBuf::from("doc"));
+        assert_eq!(config.build.output_dir, PathBuf::from("docs"));
         assert_eq!(config.book.description, None);
         assert!(config.book.authors.is_empty());
     }

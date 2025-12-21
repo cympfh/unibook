@@ -85,7 +85,7 @@ mod tests {
             },
             build: BuildConfig {
                 src_dir: PathBuf::from("src"),
-                output_dir: PathBuf::from("doc"),
+                output_dir: PathBuf::from("docs"),
             },
             pages: vec![
                 PageConfig {
@@ -175,7 +175,7 @@ mod tests {
         let book = Book::from_config(config, &temp_dir).unwrap();
         let output_dir = book.output_dir(&temp_dir);
 
-        assert_eq!(output_dir, temp_dir.join("doc"));
+        assert_eq!(output_dir, temp_dir.join("docs"));
 
         std::fs::remove_dir_all(&temp_dir).ok();
     }

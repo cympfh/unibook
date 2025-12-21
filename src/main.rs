@@ -120,7 +120,7 @@ authors = ["Your Name"]
 
 [build]
 src_dir = "src"
-output_dir = "doc"
+output_dir = "docs"
 
 [[pages]]
 title = "Introduction"
@@ -187,7 +187,7 @@ Add more content here.
 
 fn serve_book(dir: &PathBuf, port: u16) -> Result<()> {
     use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
-    use std::sync::{Arc, Mutex, mpsc::channel};
+    use std::sync::{Arc, mpsc::channel};
     use std::thread;
     use std::time::Duration;
 
