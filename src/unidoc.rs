@@ -90,12 +90,19 @@ impl UnidocCommand {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            anyhow::bail!(
-                "unidoc failed with exit code {:?}\nstderr: {}\nstdout: {}",
-                output.status.code(),
-                stderr,
-                stdout
-            );
+
+            // Log stderr to help with debugging
+            eprintln!("\n--- unidoc failed ---");
+            eprintln!("Exit code: {:?}", output.status.code());
+            if !stderr.is_empty() {
+                eprintln!("stderr:\n{}", stderr);
+            }
+            if !stdout.is_empty() {
+                eprintln!("stdout:\n{}", stdout);
+            }
+            eprintln!("--- end unidoc error ---\n");
+
+            anyhow::bail!("unidoc failed with exit code {:?}", output.status.code());
         }
 
         Ok(())

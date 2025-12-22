@@ -35,9 +35,13 @@
     - base_pathが `/` で終わっていない場合は自動で追加
     - 空文字列の場合は従来通り `/` から始まるパスになる
 
-## TODO
+## DONE
 
-- unidoc で失敗したら stderr をログに出力するようにする
+- [x] unidoc で失敗したら stderr をログに出力するようにする (2025-12-22)
+    - exit code, stderr, stdout を eprintln! で出力
+    - エラーメッセージをより明確に表示
+
+## TODO
 
 ## @CLAUDE
 
