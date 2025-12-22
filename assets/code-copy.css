@@ -1,0 +1,80 @@
+/* Code Copy Button Styling */
+
+.code-block-wrapper {
+    position: relative;
+    margin: 1em 0;
+}
+
+.code-block-wrapper pre {
+    margin: 0;
+}
+
+.code-copy-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.code-block-wrapper:hover .code-copy-button {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.code-copy-button:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+}
+
+.code-copy-button:active {
+    background-color: var(--bg-active);
+    transform: scale(0.95);
+}
+
+.code-copy-button.success {
+    background-color: #10b981;
+    border-color: #059669;
+    color: #ffffff;
+    opacity: 1;
+}
+
+.code-copy-button.error {
+    background-color: #ef4444;
+    border-color: #dc2626;
+    color: #ffffff;
+    opacity: 1;
+}
+
+.code-copy-button svg {
+    flex-shrink: 0;
+}
+
+.copy-text {
+    white-space: nowrap;
+}
+
+/* Mobile: Always show the button */
+@media (max-width: 768px) {
+    .code-copy-button {
+        opacity: 0.7;
+        pointer-events: auto;
+    }
+
+    .code-block-wrapper:hover .code-copy-button {
+        opacity: 1;
+    }
+}

@@ -48,4 +48,12 @@ impl SearchAssets {
     pub fn page_controls_end() -> &'static str {
         include_str!("../assets/page-controls-end.html")
     }
+
+    pub fn code_copy_css() -> &'static str {
+        include_str!("../assets/code-copy.css")
+    }
+
+    pub fn code_copy_js() -> &'static str {
+        include_str!("../assets/code-copy.js")
+    }
 }

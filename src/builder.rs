@@ -99,6 +99,21 @@ impl Builder {
         );
         fs::write(&toc_toggle_js_path, toc_toggle_js).context("Failed to write TOC toggle JS")?;
 
+        // Generate code copy assets
+        let code_copy_css_path = self.temp_dir.join("code-copy-style.html");
+        let code_copy_css = format!(
+            "<style>{}</style>",
+            crate::search_assets::SearchAssets::code_copy_css()
+        );
+        fs::write(&code_copy_css_path, code_copy_css).context("Failed to write code copy CSS")?;
+
+        let code_copy_js_path = self.temp_dir.join("code-copy-script.html");
+        let code_copy_js = format!(
+            "<script>{}</script>",
+            crate::search_assets::SearchAssets::code_copy_js()
+        );
+        fs::write(&code_copy_js_path, code_copy_js).context("Failed to write code copy JS")?;
+
         // Generate page controls wrapper
         let page_controls_start_path = self.temp_dir.join("page-controls-start.html");
         fs::write(
@@ -175,6 +190,7 @@ impl Builder {
                 .include_in_header(theme_css_path.clone())
                 .include_in_header(theme_switcher_css_path.clone())
                 .include_in_header(toc_toggle_css_path.clone())
+                .include_in_header(code_copy_css_path.clone())
                 .include_in_header(css_path.clone())
                 .include_in_header(search_css_path.clone())
                 .include_before_body(toc_path)
@@ -186,6 +202,7 @@ impl Builder {
                 .include_after_body(theme_switcher_js_path.clone())
                 .include_after_body(search_js_path.clone())
                 .include_after_body(toc_toggle_js_path.clone())
+                .include_after_body(code_copy_js_path.clone())
                 .include_after_body(wrapper_end_path.clone())
                 .output(output_file.clone())
                 .execute(&page.source_path)
