@@ -150,6 +150,7 @@ mod tests {
             build: BuildConfig {
                 src_dir: PathBuf::from("src"),
                 output_dir: PathBuf::from("docs"),
+                base_path: String::new(),
             },
             toc: TocConfig {
                 show_sections: "current".to_string(),

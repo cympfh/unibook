@@ -86,6 +86,9 @@ theme = "light"                 # カラーテーマ: "light" または "dark" (
 [build]
 src_dir = "src"                 # ソースディレクトリ（デフォルト: src）
 output_dir = "docs"             # 出力ディレクトリ（デフォルト: docs）
+base_path = ""                  # ベースパス（デフォルト: ""）
+                                # 例: "/gnuplot-book" → リンクが /gnuplot-book/page.html になる
+                                # GitHub Pagesなどでサブディレクトリにデプロイする場合に便利
 
 [toc]
 # H2セクションの表示設定

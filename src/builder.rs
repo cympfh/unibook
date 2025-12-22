@@ -35,6 +35,7 @@ impl Builder {
         let toc_gen = TocGenerator::new(
             self.book.config.book.title.clone(),
             self.book.config.toc.show_sections.clone(),
+            self.book.config.build.base_path.clone(),
         );
 
         for item in &self.book.items {
@@ -164,6 +165,7 @@ impl Builder {
             let toc_gen = TocGenerator::new(
                 self.book.config.book.title.clone(),
                 self.book.config.toc.show_sections.clone(),
+                self.book.config.build.base_path.clone(),
             );
             let toc_html = toc_gen.generate_toc_html(&self.book.items, Some(&page.output_filename));
             let slug = page.slug().replace(['/', '\\'], "_");

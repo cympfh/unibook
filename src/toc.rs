@@ -5,13 +5,34 @@ use crate::book::PageInfo;
 pub struct TocGenerator {
     book_title: String,
     show_sections: String,
+    base_path: String,
 }
 
 impl TocGenerator {
-    pub fn new(book_title: String, show_sections: String) -> Self {
+    pub fn new(book_title: String, show_sections: String, base_path: String) -> Self {
+        // Normalize base_path:
+        // - Add "/" at the beginning if not present
+        // - Add "/" at the end if not present
+        let normalized_base_path = if base_path.is_empty() {
+            String::new()
+        } else {
+            let mut path = base_path;
+            // Add leading "/" if missing
+            if !path.starts_with('/') {
+                path = format!("/{}", path);
+            }
+            // Add trailing "/" if missing
+            if !path.ends_with('/') {
+                path = format!("{}/", path);
+            }
+            // Remove the trailing "/" for storage (we'll add it in generate_toc_html)
+            path.trim_end_matches('/').to_string()
+        };
+
         Self {
             book_title,
             show_sections,
+            base_path: normalized_base_path,
         }
     }
 
@@ -47,7 +68,8 @@ impl TocGenerator {
                     let is_current = Some(page.output_filename.as_str()) == current_page;
                     let current_class = if is_current { " class=\"current\"" } else { "" };
                     html.push_str(&format!(
-                        "    <li>\n      <a href=\"/{}\"{}>{}</a>\n",
+                        "    <li>\n      <a href=\"{}/{}\"{}>{}</a>\n",
+                        self.base_path,
                         html_escape(&page.output_filename),
                         current_class,
                         html_escape(&page.title)
@@ -65,7 +87,8 @@ impl TocGenerator {
                         html.push_str("      <ul class=\"toc-sections\">\n");
                         for section in &page.sections {
                             html.push_str(&format!(
-                                "        <li><a href=\"/{}#{}\">{}</a></li>\n",
+                                "        <li><a href=\"{}/{}#{}\">{}</a></li>\n",
+                                self.base_path,
                                 html_escape(&page.output_filename),
                                 html_escape(&section.id),
                                 html_escape(&section.title)
@@ -322,13 +345,18 @@ mod tests {
 
     #[test]
     fn test_toc_generator_new() {
-        let generator = TocGenerator::new("My Book".to_string(), "current".to_string());
+        let generator =
+            TocGenerator::new("My Book".to_string(), "current".to_string(), "".to_string());
         assert_eq!(generator.book_title, "My Book");
     }
 
     #[test]
     fn test_generate_toc_html_no_current() {
-        let generator = TocGenerator::new("Test Book".to_string(), "current".to_string());
+        let generator = TocGenerator::new(
+            "Test Book".to_string(),
+            "current".to_string(),
+            "".to_string(),
+        );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
 
@@ -346,7 +374,11 @@ mod tests {
 
     #[test]
     fn test_generate_toc_html_with_current() {
-        let generator = TocGenerator::new("Test Book".to_string(), "current".to_string());
+        let generator = TocGenerator::new(
+            "Test Book".to_string(),
+            "current".to_string(),
+            "".to_string(),
+        );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, Some("chapter1.html"));
 
@@ -357,7 +389,11 @@ mod tests {
 
     #[test]
     fn test_generate_toc_html_escapes() {
-        let generator = TocGenerator::new("Test <Book>".to_string(), "current".to_string());
+        let generator = TocGenerator::new(
+            "Test <Book>".to_string(),
+            "current".to_string(),
+            "".to_string(),
+        );
         let items = vec![BookItem::Page(PageInfo {
             title: "Chapter <1>".to_string(),
             source_path: std::path::PathBuf::from("src/ch1.md"),
@@ -390,7 +426,8 @@ mod tests {
 
     #[test]
     fn test_toc_links_correct() {
-        let generator = TocGenerator::new("Test".to_string(), "current".to_string());
+        let generator =
+            TocGenerator::new("Test".to_string(), "current".to_string(), "".to_string());
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
 
@@ -398,5 +435,55 @@ mod tests {
         assert!(html.contains("<a href=\"/intro.html\">Introduction</a>"));
         assert!(html.contains("<a href=\"/chapter1.html\">Chapter 1</a>"));
         assert!(html.contains("<a href=\"/chapter2.html\">Chapter 2</a>"));
+    }
+
+    #[test]
+    fn test_base_path_normalization() {
+        // Test with base_path without leading or trailing slash
+        let generator = TocGenerator::new(
+            "Test".to_string(),
+            "current".to_string(),
+            "gnuplot-book".to_string(),
+        );
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
+        assert!(html.contains("<a href=\"/gnuplot-book/intro.html\">Introduction</a>"));
+
+        // Test with base_path with leading slash only
+        let generator = TocGenerator::new(
+            "Test".to_string(),
+            "current".to_string(),
+            "/gnuplot-book".to_string(),
+        );
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
+        assert!(html.contains("<a href=\"/gnuplot-book/intro.html\">Introduction</a>"));
+
+        // Test with base_path with trailing slash only
+        let generator = TocGenerator::new(
+            "Test".to_string(),
+            "current".to_string(),
+            "gnuplot-book/".to_string(),
+        );
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
+        assert!(html.contains("<a href=\"/gnuplot-book/intro.html\">Introduction</a>"));
+
+        // Test with base_path with both leading and trailing slash
+        let generator = TocGenerator::new(
+            "Test".to_string(),
+            "current".to_string(),
+            "/gnuplot-book/".to_string(),
+        );
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
+        assert!(html.contains("<a href=\"/gnuplot-book/intro.html\">Introduction</a>"));
+
+        // Test with empty base_path
+        let generator =
+            TocGenerator::new("Test".to_string(), "current".to_string(), "".to_string());
+        let items = create_test_items();
+        let html = generator.generate_toc_html(&items, None);
+        assert!(html.contains("<a href=\"/intro.html\">Introduction</a>"));
     }
 }

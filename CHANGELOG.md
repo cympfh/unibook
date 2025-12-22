@@ -1,5 +1,25 @@
 # リリースノート
 
+## 新機能 (2025-12-22)
+
+- **base_path設定のサポート**: サブディレクトリでのデプロイに対応
+  - `book.toml`の`[build]`セクションで`base_path`を設定可能
+  - すべてのリンクが指定されたbase_pathを含むようになります
+  - 例: `base_path = "/gnuplot-book"` と設定すると、リンクが `/gnuplot-book/page.html` 形式になります
+  - GitHub Pagesなどでリポジトリ名をパスに含める場合に便利
+  - base_pathの正規化機能:
+    - 先頭に `/` がない場合は自動で追加
+    - 末尾に `/` がない場合は自動で追加
+    - 空文字列の場合は従来通り `/` から始まるパス（デフォルト動作）
+  - 設定例:
+    ```toml
+    [build]
+    base_path = "/gnuplot-book"
+    # または
+    base_path = "gnuplot-book"  # 自動で "/gnuplot-book" に正規化
+    ```
+  - 変更されたファイル: `src/config.rs`, `src/toc.rs`, `src/builder.rs`, `src/book.rs`
+
 ## バグ修正 (2025-12-22)
 
 - **Prismシンタックスハイライトのタイミング問題を修正**: コードブロックのシンタックスハイライトが正しく適用されるようになりました

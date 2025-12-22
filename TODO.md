@@ -27,7 +27,17 @@
     - window load イベントの100ms後にPrism.highlightAll()を再実行
     - すべてのリソース（スクリプトを含む）がロードされた後に実行される
 
+## DONE
+
+- [x] base_path を book.toml で設定できるようにする (2025-12-22)
+    - base_path = '/gnuplot-book' としたらリンク `a/b/c` が `/gnuplot-book/a/b/c` になる
+    - base_pathが `/` で始まっていない場合は自動で追加
+    - base_pathが `/` で終わっていない場合は自動で追加
+    - 空文字列の場合は従来通り `/` から始まるパスになる
+
 ## TODO
+
+- unidoc で失敗したら stderr をログに出力するようにする
 
 ## @CLAUDE
 

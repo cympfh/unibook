@@ -41,6 +41,8 @@ pub struct BuildConfig {
     pub src_dir: PathBuf,
     #[serde(default = "default_output_dir")]
     pub output_dir: PathBuf,
+    #[serde(default = "default_base_path")]
+    pub base_path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,11 +74,16 @@ fn default_output_dir() -> PathBuf {
     PathBuf::from("docs")
 }
 
+fn default_base_path() -> String {
+    String::new()
+}
+
 impl Default for BuildConfig {
     fn default() -> Self {
         Self {
             src_dir: default_src_dir(),
             output_dir: default_output_dir(),
+            base_path: default_base_path(),
         }
     }
 }
