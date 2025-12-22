@@ -245,10 +245,31 @@ fn serve_book(dir: &Path, port: u16) -> Result<()> {
                 Ok(event) => {
                     if last_build.elapsed() > Duration::from_millis(500) {
                         println!("\n[Watch] Change detected: {:?}", event);
-                        println!("[Watch] Rebuilding...");
-                        match build_book(&dir_clone) {
-                            Ok(_) => println!("[Watch] Build successful!\n"),
-                            Err(e) => eprintln!("[Watch] Build failed: {}\n", e),
+
+                        // Determine which file changed
+                        let changed_file = event.paths.first();
+
+                        // Load config and create builder
+                        let config_path = dir_clone.join("book.toml");
+                        match config::Config::from_file(&config_path) {
+                            Ok(cfg) => match book::Book::from_config(cfg, &dir_clone) {
+                                Ok(bk) => match builder::Builder::new(bk, &dir_clone) {
+                                    Ok(builder) => {
+                                        println!("[Watch] Rebuilding...");
+                                        let result = builder
+                                            .build_incremental(changed_file.map(|p| p.as_path()));
+                                        match result {
+                                            Ok(_) => println!("[Watch] Build successful!\n"),
+                                            Err(e) => eprintln!("[Watch] Build failed: {}\n", e),
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[Watch] Failed to create builder: {}\n", e)
+                                    }
+                                },
+                                Err(e) => eprintln!("[Watch] Failed to load book: {}\n", e),
+                            },
+                            Err(e) => eprintln!("[Watch] Failed to load config: {}\n", e),
                         }
                         last_build = std::time::Instant::now();
                     }
@@ -420,10 +441,29 @@ fn watch_book(dir: &Path, dev_mode: bool) -> Result<()> {
                     // Debounce: only rebuild if 500ms have passed since last build
                     if last_build.elapsed() > Duration::from_millis(500) {
                         println!("\nChange detected: {:?}", event);
-                        println!("Rebuilding...");
-                        match build_book(dir) {
-                            Ok(_) => println!("Build successful!"),
-                            Err(e) => eprintln!("Build failed: {}", e),
+
+                        // Determine which file changed
+                        let changed_file = event.paths.first();
+
+                        // Load config and create builder
+                        let config_path = dir.join("book.toml");
+                        match config::Config::from_file(&config_path) {
+                            Ok(cfg) => match book::Book::from_config(cfg, dir) {
+                                Ok(bk) => match builder::Builder::new(bk, dir) {
+                                    Ok(builder) => {
+                                        println!("Rebuilding...");
+                                        let result = builder
+                                            .build_incremental(changed_file.map(|p| p.as_path()));
+                                        match result {
+                                            Ok(_) => println!("Build successful!"),
+                                            Err(e) => eprintln!("Build failed: {}", e),
+                                        }
+                                    }
+                                    Err(e) => eprintln!("Failed to create builder: {}", e),
+                                },
+                                Err(e) => eprintln!("Failed to load book: {}", e),
+                            },
+                            Err(e) => eprintln!("Failed to load config: {}", e),
                         }
                         last_build = std::time::Instant::now();
                     }

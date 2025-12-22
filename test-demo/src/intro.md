@@ -36,3 +36,9 @@ console.log(fibonacci(10));
 ## Navigation
 
 The table of contents will appear on the left side of each page, allowing readers to easily navigate between chapters.
+
+## Incremental Build Test
+
+This line was added to test the incremental build feature!
+ 
+
