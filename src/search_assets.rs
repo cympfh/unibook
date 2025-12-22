@@ -56,4 +56,8 @@ impl SearchAssets {
     pub fn code_copy_js() -> &'static str {
         include_str!("../assets/code-copy.js")
     }
+
+    pub fn prism_retry_js() -> &'static str {
+        include_str!("../assets/prism-retry.js")
+    }
 }

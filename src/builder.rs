@@ -311,6 +311,14 @@ impl Builder {
         );
         fs::write(&search_js_path, search_js).context("Failed to write search JS")?;
 
+        let prism_retry_js_path = self.temp_dir.join("prism-retry-script.html");
+        let prism_retry_js = format!(
+            "<script>{}</script>",
+            crate::search_assets::SearchAssets::prism_retry_js()
+        );
+        fs::write(&prism_retry_js_path, prism_retry_js)
+            .context("Failed to write Prism retry JS")?;
+
         Ok(())
     }
 
@@ -336,6 +344,7 @@ impl Builder {
         let search_js_path = self.temp_dir.join("search-script.html");
         let toc_toggle_js_path = self.temp_dir.join("toc-toggle-script.html");
         let code_copy_js_path = self.temp_dir.join("code-copy-script.html");
+        let prism_retry_js_path = self.temp_dir.join("prism-retry-script.html");
         let wrapper_end_path = self.temp_dir.join("wrapper-end.html");
 
         UnidocCommand::new()
@@ -357,6 +366,7 @@ impl Builder {
             .include_after_body(search_js_path)
             .include_after_body(toc_toggle_js_path)
             .include_after_body(code_copy_js_path)
+            .include_after_body(prism_retry_js_path)
             .include_after_body(wrapper_end_path)
             .output(output_file.to_path_buf())
             .execute(&page.source_path)
