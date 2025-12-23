@@ -6,7 +6,7 @@ Markdownファイルから目次付きHTML書籍を生成するドキュメン�
 
 - 📚 **mdbook風のシンプルな設計** - 使いやすいコマンドラインインターフェース
 - 📑 **自動目次生成** - 全ページに左サイドバーの目次を自動追加
-- 📖 **Part階層のサポート** - 章より上の階層（Part）を目次に表示可能
+- 📖 **5階層の目次構造** - Part/Chapter/Section/Subsection/Pageで柔軟な階層表現
 - 🔍 **全文検索機能** - Ctrl+K でページ内を高速検索
 - 🌓 **カラーテーマ** - ライト/ダークモード対応
 - 📂 **H2セクション表示** - 目次にH2見出しを表示可能
@@ -97,32 +97,82 @@ base_path = ""                  # ベースパス（デフォルト: ""）
 # - "never": H2を表示しない
 show_sections = "current"
 
-# ページの定義（この順番で目次に表示されます）
-[[pages]]
+# アイテムの定義（この順番で目次に表示されます）
+# 5つの階層レベルをサポート: part, chapter, section, subsection, page
+# level を指定しない場合は page がデフォルト
+# path を指定しない場合、目次に見出しのみ表示（ページは生成されません）
+
+[[items]]
+title = "Part 1: 基礎編"
+level = "part"
+# path なし = 見出しのみ
+
+[[items]]
 title = "はじめに"
 path = "intro.md"
+# level なし = page (デフォルト)
 
-# Part（章より上の階層）を定義できます
-# path を指定しない場合、目次に見出しのみ表示されます（ページは生成されません）
-[[pages]]
-title = "Part 1: 基礎編"
-# path なし = part（見出しのみ）
-
-[[pages]]
-title = "第1章"
+[[items]]
+title = "第1章: 導入"
+level = "chapter"
 path = "chapter1.md"
 
-[[pages]]
-title = "第2章"
-path = "chapter2.md"
+[[items]]
+title = "セクション 1.1"
+level = "section"
+path = "section1_1.md"
 
-[[pages]]
+[[items]]
+title = "サブセクション 1.1.1"
+level = "subsection"
+path = "subsection1_1_1.md"
+
+[[items]]
 title = "Part 2: 応用編"
-# 別の part
+level = "part"
 
-[[pages]]
-title = "第3章"
-path = "chapter3.md"
+[[items]]
+title = "第2章"
+level = "chapter"
+path = "chapter2.md"
+```
+
+### 階層レベルの詳細
+
+`[[items]]` では5つの階層レベルを指定できます：
+
+| レベル | 説明 | 目次での表示 | path |
+|--------|------|-------------|------|
+| `part` | Part（部）- 最上位の区切り | 背景色反転、太字、大文字、不透明度100% | オプション |
+| `chapter` | Chapter（章） | 背景色反転、太字、大文字、不透明度80% | オプション |
+| `section` | Section（節） | 背景色反転、太字、大文字、不透明度60% | オプション |
+| `subsection` | Subsection（項） | 背景色反転、太字、大文字、不透明度40% | オプション |
+| `page` | Page（ページ）- デフォルト | 通常の表示（背景色なし） | オプション |
+
+**重要な特徴：**
+- `level` を省略すると自動的に `page` になります
+- `path` はすべてのレベルで**完全にオプショナル**です
+- `path` なしのアイテムは目次に見出しとして表示されますが、ページは生成されません
+- すべてのレベルで `path` を指定すればページが生成されます
+
+**使用例：**
+
+```toml
+# Part（見出しのみ、ページなし）
+[[items]]
+title = "Part 1: 基礎"
+level = "part"
+
+# Chapter（ページあり）
+[[items]]
+title = "第1章: はじめに"
+level = "chapter"
+path = "chapter1.md"
+
+# 通常のページ（levelを省略）
+[[items]]
+title = "概要"
+path = "overview.md"
 ```
 
 ## コマンド一覧

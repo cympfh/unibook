@@ -16,10 +16,22 @@ output_dir = "docs"
 # Default: "current" (show only for current page)
 show_sections = "current"
 
-[[pages]]
+# Items can have different levels:
+# - page (default): Regular page
+# - part: Top-level separator (no link)
+# - chapter: Chapter heading (slightly indented)
+# - section: Section (more indented)
+# - subsection: Subsection (most indented)
+
+[[items]]
+title = "Part 1: Getting Started"
+level = "part"
+
+[[items]]
 title = "Introduction"
 path = "intro.md"
 
-[[pages]]
+[[items]]
 title = "Chapter 1"
+level = "chapter"
 path = "chapter1.md"

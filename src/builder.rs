@@ -39,9 +39,9 @@ impl Builder {
         );
 
         for item in &self.book.items {
-            let page = match item {
-                crate::book::BookItem::Part { .. } => continue, // Skip parts
-                crate::book::BookItem::Page(page) => page,
+            let page = match &item.page {
+                None => continue, // Skip items without page content
+                Some(page) => page,
             };
 
             println!(
@@ -65,7 +65,7 @@ impl Builder {
                 fs::create_dir_all(parent).context("Failed to create output subdirectories")?;
             }
 
-            self.build_page(page, &toc_path, &output_file)?;
+            self.build_page(page, &toc_path, &output_file, &item.title)?;
         }
 
         // Generate search index
@@ -74,10 +74,11 @@ impl Builder {
             .context("Failed to generate search index")?;
 
         // Generate index.html that redirects to first page
-        let first_page = self.book.items.iter().find_map(|item| match item {
-            crate::book::BookItem::Page(page) => Some(page),
-            _ => None,
-        });
+        let first_page = self
+            .book
+            .items
+            .iter()
+            .find_map(|item| item.page.as_ref());
 
         if let Some(first_page) = first_page {
             let index_path = output_dir.join("index.html");
@@ -142,19 +143,17 @@ impl Builder {
         let changed_file_canonical = changed_file.canonicalize().ok();
 
         // Find the page that corresponds to this changed file
-        let changed_page = self.book.items.iter().find_map(|item| match item {
-            crate::book::BookItem::Page(page) => {
+        let changed_item = self.book.items.iter().find(|item| {
+            if let Some(page) = &item.page {
                 let page_canonical = page.source_path.canonicalize().ok();
-                if page_canonical.is_some() && page_canonical == changed_file_canonical {
-                    Some(page)
-                } else {
-                    None
-                }
+                page_canonical.is_some() && page_canonical == changed_file_canonical
+            } else {
+                false
             }
-            _ => None,
         });
 
-        if let Some(page) = changed_page {
+        if let Some((item, page)) = changed_item.and_then(|item| item.page.as_ref().map(|p| (item, p)))
+        {
             println!(
                 "Building: {} -> {}",
                 page.source_path.display(),
@@ -178,7 +177,7 @@ impl Builder {
                 fs::create_dir_all(parent).context("Failed to create output subdirectories")?;
             }
 
-            self.build_page(page, &toc_path, &output_file)?;
+            self.build_page(page, &toc_path, &output_file, &item.title)?;
 
             // Regenerate search index (this is relatively fast)
             println!("Updating search index...");
@@ -329,6 +328,7 @@ impl Builder {
         page: &crate::book::PageInfo,
         toc_path: &Path,
         output_file: &Path,
+        page_title: &str,
     ) -> Result<()> {
         let theme_meta_path = self.temp_dir.join("theme-meta.html");
         let theme_css_path = self.temp_dir.join("theme-style.html");
@@ -372,7 +372,7 @@ impl Builder {
             .include_after_body(wrapper_end_path)
             .output(output_file.to_path_buf())
             .execute(&page.source_path)
-            .context(format!("Failed to build page: {}", page.title))?;
+            .context(format!("Failed to build page: {}", page_title))?;
 
         self.add_lang_attribute(output_file)?;
         Ok(())

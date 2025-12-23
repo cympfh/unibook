@@ -1,12 +1,6 @@
-use crate::config::Config;
+use crate::config::{Config, ItemLevel};
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone)]
-pub enum BookItem {
-    Part { title: String },
-    Page(PageInfo),
-}
 
 #[derive(Debug)]
 pub struct Book {
@@ -15,8 +9,14 @@ pub struct Book {
 }
 
 #[derive(Debug, Clone)]
-pub struct PageInfo {
+pub struct BookItem {
     pub title: String,
+    pub level: ItemLevel,
+    pub page: Option<PageInfo>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PageInfo {
     pub source_path: PathBuf,
     pub output_filename: String,
     pub sections: Vec<Section>,
@@ -32,16 +32,11 @@ impl Book {
     pub fn from_config(config: Config, base_dir: &Path) -> Result<Self> {
         let mut items = Vec::new();
 
-        for page_config in &config.pages {
-            match &page_config.path {
-                None => {
-                    // No path = Part (heading only)
-                    items.push(BookItem::Part {
-                        title: page_config.title.clone(),
-                    });
-                }
+        for item_config in &config.items {
+            let page = match &item_config.path {
+                None => None,
                 Some(path) => {
-                    // Has path = Page
+                    // Has path = create PageInfo
                     let source_path = base_dir.join(&config.build.src_dir).join(path);
 
                     // Validate that source file exists
@@ -59,14 +54,19 @@ impl Book {
                     // Extract H2 sections from markdown
                     let sections = Self::extract_sections(&source_path)?;
 
-                    items.push(BookItem::Page(PageInfo {
-                        title: page_config.title.clone(),
+                    Some(PageInfo {
                         source_path,
                         output_filename,
                         sections,
-                    }));
+                    })
                 }
-            }
+            };
+
+            items.push(BookItem {
+                title: item_config.title.clone(),
+                level: item_config.level.clone(),
+                page,
+            });
         }
 
         Ok(Self { config, items })
@@ -136,7 +136,7 @@ impl PageInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{BookConfig, BuildConfig, Config, PageConfig, TocConfig};
+    use crate::config::{BookConfig, BuildConfig, Config, ItemConfig, ItemLevel, TocConfig};
 
     fn create_test_config() -> Config {
         Config {
@@ -155,13 +155,15 @@ mod tests {
             toc: TocConfig {
                 show_sections: "current".to_string(),
             },
-            pages: vec![
-                PageConfig {
+            items: vec![
+                ItemConfig {
                     title: "Page 1".to_string(),
+                    level: ItemLevel::Page,
                     path: Some("page1.md".to_string()),
                 },
-                PageConfig {
+                ItemConfig {
                     title: "Page 2".to_string(),
+                    level: ItemLevel::Page,
                     path: Some("page2.md".to_string()),
                 },
             ],
@@ -206,20 +208,20 @@ mod tests {
         let book = Book::from_config(config, &temp_dir).unwrap();
 
         assert_eq!(book.items.len(), 2);
-        match &book.items[0] {
-            BookItem::Page(page) => {
-                assert_eq!(page.title, "Page 1");
-                assert_eq!(page.output_filename, "page1.html");
-            }
-            _ => panic!("Expected Page, got Part"),
-        }
-        match &book.items[1] {
-            BookItem::Page(page) => {
-                assert_eq!(page.title, "Page 2");
-                assert_eq!(page.output_filename, "page2.html");
-            }
-            _ => panic!("Expected Page, got Part"),
-        }
+
+        assert_eq!(book.items[0].title, "Page 1");
+        assert!(book.items[0].page.is_some());
+        assert_eq!(
+            book.items[0].page.as_ref().unwrap().output_filename,
+            "page1.html"
+        );
+
+        assert_eq!(book.items[1].title, "Page 2");
+        assert!(book.items[1].page.is_some());
+        assert_eq!(
+            book.items[1].page.as_ref().unwrap().output_filename,
+            "page2.html"
+        );
 
         // Cleanup
         std::fs::remove_dir_all(&temp_dir).ok();
@@ -240,7 +242,6 @@ mod tests {
     #[test]
     fn test_page_info_slug() {
         let page = PageInfo {
-            title: "Test Page".to_string(),
             source_path: PathBuf::from("test.md"),
             output_filename: "test.html".to_string(),
             sections: vec![],

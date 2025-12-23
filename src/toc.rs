@@ -1,6 +1,7 @@
 use crate::book::BookItem;
 #[cfg(test)]
 use crate::book::PageInfo;
+use crate::config::ItemLevel;
 
 pub struct TocGenerator {
     book_title: String,
@@ -56,23 +57,35 @@ impl TocGenerator {
         html.push_str("  <ul class=\"toc-list\">\n");
 
         for item in items {
-            match item {
-                BookItem::Part { title } => {
-                    // Render part as a separator/heading (no link)
+            // Determine CSS class based on item level
+            let level_class = match item.level {
+                ItemLevel::Part => "toc-part",
+                ItemLevel::Chapter => "toc-chapter",
+                ItemLevel::Section => "toc-section",
+                ItemLevel::Subsection => "toc-subsection",
+                ItemLevel::Page => "toc-page",
+            };
+
+            match &item.page {
+                None => {
+                    // No page content = render as heading/separator only
                     html.push_str(&format!(
-                        "    <li class=\"toc-part\">{}</li>\n",
-                        html_escape(title)
+                        "    <li class=\"{}\">{}</li>\n",
+                        level_class,
+                        html_escape(&item.title)
                     ));
                 }
-                BookItem::Page(page) => {
+                Some(page) => {
+                    // Has page content = render as link
                     let is_current = Some(page.output_filename.as_str()) == current_page;
-                    let current_class = if is_current { " class=\"current\"" } else { "" };
+                    let current_class = if is_current { " current" } else { "" };
                     html.push_str(&format!(
-                        "    <li>\n      <a href=\"{}/{}\"{}>{}</a>\n",
+                        "    <li class=\"{}{}\">\n      <a href=\"{}/{}\">{}</a>\n",
+                        level_class,
+                        current_class,
                         self.base_path,
                         html_escape(&page.output_filename),
-                        current_class,
-                        html_escape(&page.title)
+                        html_escape(&item.title)
                     ));
 
                     // Add sections based on show_sections setting
@@ -189,24 +202,22 @@ body {
   margin: 5px 0;
 }
 
-.toc-list > li > a {
-  display: block;
-  padding: 8px 12px;
+.toc-list a {
   text-decoration: none;
-  color: var(--text-primary);
-  border-radius: 4px;
-  font-weight: 500;
-  transition: background 0.2s;
+  margin: 0;
+  padding: 0;
 }
 
-.toc-list a:hover {
-  background: var(--bg-hover);
+.toc-list li:not(.current) > a:hover {
+  padding-left: 1.5rem;
 }
 
-.toc-list a.current {
-  background: var(--bg-active);
+.toc-list li.current > a {
   font-weight: bold;
-  color: var(--text-primary);
+}
+
+.toc-list li.current > a:before {
+    content: "▶ ";
 }
 
 /* Part (separator/heading) styling */
@@ -220,6 +231,87 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
+}
+
+.toc-part > a {
+  color: inherit;
+  background: inherit;
+  text-decoration: none;
+}
+
+/* Chapter styling */
+.toc-chapter {
+  margin: 16px 0 6px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.toc-chapter > a {
+  color: inherit;
+  background: inherit;
+  text-decoration: none;
+}
+
+/* Section styling */
+.toc-section {
+  margin: 12px 0 4px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
+.toc-section > a {
+  color: inherit;
+  background: inherit;
+  text-decoration: none;
+}
+
+/* Subsection styling */
+.toc-subsection {
+  margin: 8px 0 4px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  opacity: 0.4;
+}
+
+.toc-subsection > a {
+  color: inherit;
+  background: inherit;
+  text-decoration: none;
+}
+
+/* Page (default) styling - 通常表示 */
+.toc-page {
+  margin: 4px 0;
+}
+
+.toc-page > a {
+  display: block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background 0.2s;
 }
 
 /* Section (H2) styling */
@@ -313,24 +405,33 @@ mod tests {
 
     fn create_test_items() -> Vec<BookItem> {
         vec![
-            BookItem::Page(PageInfo {
+            BookItem {
                 title: "Introduction".to_string(),
-                source_path: std::path::PathBuf::from("src/intro.md"),
-                output_filename: "intro.html".to_string(),
-                sections: vec![],
-            }),
-            BookItem::Page(PageInfo {
+                level: ItemLevel::Page,
+                page: Some(PageInfo {
+                    source_path: std::path::PathBuf::from("src/intro.md"),
+                    output_filename: "intro.html".to_string(),
+                    sections: vec![],
+                }),
+            },
+            BookItem {
                 title: "Chapter 1".to_string(),
-                source_path: std::path::PathBuf::from("src/chapter1.md"),
-                output_filename: "chapter1.html".to_string(),
-                sections: vec![],
-            }),
-            BookItem::Page(PageInfo {
+                level: ItemLevel::Page,
+                page: Some(PageInfo {
+                    source_path: std::path::PathBuf::from("src/chapter1.md"),
+                    output_filename: "chapter1.html".to_string(),
+                    sections: vec![],
+                }),
+            },
+            BookItem {
                 title: "Chapter 2".to_string(),
-                source_path: std::path::PathBuf::from("src/chapter2.md"),
-                output_filename: "chapter2.html".to_string(),
-                sections: vec![],
-            }),
+                level: ItemLevel::Page,
+                page: Some(PageInfo {
+                    source_path: std::path::PathBuf::from("src/chapter2.md"),
+                    output_filename: "chapter2.html".to_string(),
+                    sections: vec![],
+                }),
+            },
         ]
     }
 
@@ -382,7 +483,8 @@ mod tests {
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, Some("chapter1.html"));
 
-        assert!(html.contains("href=\"/chapter1.html\" class=\"current\""));
+        assert!(html.contains("href=\"/chapter1.html\""));
+        assert!(html.contains("class=\"toc-page current\""));
         assert!(!html.contains("href=\"/intro.html\" class=\"current\""));
         assert!(!html.contains("href=\"/chapter2.html\" class=\"current\""));
     }
@@ -394,12 +496,15 @@ mod tests {
             "current".to_string(),
             "".to_string(),
         );
-        let items = vec![BookItem::Page(PageInfo {
+        let items = vec![BookItem {
             title: "Chapter <1>".to_string(),
-            source_path: std::path::PathBuf::from("src/ch1.md"),
-            output_filename: "ch1.html".to_string(),
-            sections: vec![],
-        })];
+            level: ItemLevel::Page,
+            page: Some(PageInfo {
+                source_path: std::path::PathBuf::from("src/ch1.md"),
+                output_filename: "ch1.html".to_string(),
+                sections: vec![],
+            }),
+        }];
         let html = generator.generate_toc_html(&items, None);
 
         assert!(html.contains("Test &lt;Book&gt;"));

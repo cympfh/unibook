@@ -9,7 +9,7 @@ pub struct Config {
     pub build: BuildConfig,
     #[serde(default)]
     pub toc: TocConfig,
-    pub pages: Vec<PageConfig>,
+    pub items: Vec<ItemConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -60,10 +60,23 @@ fn default_show_sections() -> String {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct PageConfig {
+pub struct ItemConfig {
     pub title: String,
-    /// Path to the markdown file. If None, this is a part (separator/heading only)
+    #[serde(default)]
+    pub level: ItemLevel,
+    /// Path to the markdown file. Optional for all item levels.
     pub path: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ItemLevel {
+    #[default]
+    Page,
+    Part,
+    Chapter,
+    Section,
+    Subsection,
 }
 
 fn default_src_dir() -> PathBuf {
@@ -109,14 +122,14 @@ impl Config {
         if self.book.title.is_empty() {
             anyhow::bail!("Book title cannot be empty");
         }
-        if self.pages.is_empty() {
-            anyhow::bail!("No pages defined in book.toml");
+        if self.items.is_empty() {
+            anyhow::bail!("No items defined in book.toml");
         }
         // Check for duplicate titles
         let mut titles = std::collections::HashSet::new();
-        for page in &self.pages {
-            if !titles.insert(&page.title) {
-                anyhow::bail!("Duplicate page title: {}", page.title);
+        for item in &self.items {
+            if !titles.insert(&item.title) {
+                anyhow::bail!("Duplicate item title: {}", item.title);
             }
         }
         Ok(())
@@ -140,12 +153,13 @@ authors = ["Alice", "Bob"]
 src_dir = "source"
 output_dir = "output"
 
-[[pages]]
+[[items]]
 title = "Page 1"
 path = "page1.md"
 
-[[pages]]
+[[items]]
 title = "Page 2"
+level = "chapter"
 path = "page2.md"
 "#;
         let config: Config = toml::from_str(toml_content).unwrap();
@@ -154,9 +168,11 @@ path = "page2.md"
         assert_eq!(config.book.authors, vec!["Alice", "Bob"]);
         assert_eq!(config.build.src_dir, PathBuf::from("source"));
         assert_eq!(config.build.output_dir, PathBuf::from("output"));
-        assert_eq!(config.pages.len(), 2);
-        assert_eq!(config.pages[0].title, "Page 1");
-        assert_eq!(config.pages[0].path, Some("page1.md".to_string()));
+        assert_eq!(config.items.len(), 2);
+        assert_eq!(config.items[0].title, "Page 1");
+        assert_eq!(config.items[0].path, Some("page1.md".to_string()));
+        assert!(matches!(config.items[0].level, ItemLevel::Page));
+        assert!(matches!(config.items[1].level, ItemLevel::Chapter));
     }
 
     #[test]
@@ -165,7 +181,7 @@ path = "page2.md"
 [book]
 title = "Test Book"
 
-[[pages]]
+[[items]]
 title = "Page 1"
 path = "page1.md"
 "#;
@@ -174,6 +190,7 @@ path = "page1.md"
         assert_eq!(config.build.output_dir, PathBuf::from("docs"));
         assert_eq!(config.book.description, None);
         assert!(config.book.authors.is_empty());
+        assert!(matches!(config.items[0].level, ItemLevel::Page));
     }
 
     #[test]
@@ -182,7 +199,7 @@ path = "page1.md"
 [book]
 title = ""
 
-[[pages]]
+[[items]]
 title = "Page 1"
 path = "page1.md"
 "#;
@@ -191,7 +208,7 @@ path = "page1.md"
     }
 
     #[test]
-    fn test_config_validation_no_pages() {
+    fn test_config_validation_no_items() {
         let config = Config {
             book: BookConfig {
                 title: "Test Book".to_string(),
@@ -202,7 +219,7 @@ path = "page1.md"
             },
             build: BuildConfig::default(),
             toc: TocConfig::default(),
-            pages: vec![],
+            items: vec![],
         };
         assert!(config.validate().is_err());
     }
@@ -213,11 +230,11 @@ path = "page1.md"
 [book]
 title = "Test Book"
 
-[[pages]]
+[[items]]
 title = "Page 1"
 path = "page1.md"
 
-[[pages]]
+[[items]]
 title = "Page 1"
 path = "page2.md"
 "#;
@@ -234,7 +251,7 @@ path = "page2.md"
 [book]
 title = "Test Book"
 
-[[pages]]
+[[items]]
 title = "Page 1"
 path = "page1.md"
 "#;

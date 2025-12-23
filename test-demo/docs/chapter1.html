@@ -412,7 +412,13 @@ body {
   color: var(--text-primary);
 }
 
-/* Part (separator/heading) styling */
+.toc-list li.current > a {
+  background: var(--bg-active);
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+/* Part (separator/heading) styling - 色反転 */
 .toc-part {
   margin: 20px 0 8px 0;
   padding: 8px 12px;
@@ -423,6 +429,83 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
+}
+
+.toc-part > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Chapter styling - opacity: 0.8 */
+.toc-chapter {
+  margin: 16px 0 6px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.toc-chapter > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Section styling - opacity: 0.6 */
+.toc-section {
+  margin: 12px 0 4px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
+.toc-section > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Subsection styling - opacity: 0.4 */
+.toc-subsection {
+  margin: 8px 0 4px 0;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  opacity: 0.4;
+}
+
+.toc-subsection > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Page (default) styling - 通常表示 */
+.toc-page {
+  margin: 4px 0;
+}
+
+.toc-page > a {
+  display: block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background 0.2s;
 }
 
 /* Section (H2) styling */
@@ -630,11 +713,12 @@ table tbody tr:hover {
     Search
   </button>
   <ul class="toc-list">
-    <li>
+    <li class="toc-part">Part 1: Getting Started</li>
+    <li class="toc-page">
       <a href="/intro.html">Introduction</a>
     </li>
-    <li>
-      <a href="/chapter1.html" class="current">Chapter 1</a>
+    <li class="toc-chapter current">
+      <a href="/chapter1.html">Chapter 1</a>
       <ul class="toc-sections">
         <li><a href="/chapter1.html#2-Section%201%2E1">Section 1.1</a></li>
         <li><a href="/chapter1.html#2-Section%201%2E2">Section 1.2</a></li>

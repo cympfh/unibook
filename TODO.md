@@ -41,7 +41,24 @@
     - exit code, stderr, stdout を eprintln! で出力
     - エラーメッセージをより明確に表示
 
+## DONE
+
+- [x] BookItem を BookPage にする (2025-12-23)
+    - `[[pages]]` を `[[items]]` に変更
+    - BookItem の構造を変更: enum から struct に
+        - `title: String`, `level: ItemLevel`, `page: Option<PageInfo>`
+    - PageInfo から title を削除（BookItem側に移動）
+    - ItemLevel enum を追加: Page, Part, Chapter, Section, Subsection
+    - デフォルトは Page
+    - path は完全にオプショナル（すべてのレベルで指定可能/不可能）
+    - TOC の CSS を階層ごとに調整
+        - Part, Chapter, Section, Subsection: 背景色反転（color: var(--bg-primary), background: var(--text-primary)）
+        - 不透明度で階層を表現: Part(100%) > Chapter(80%) > Section(60%) > Subsection(40%)
+        - Page: 通常の表示（背景色なし）
+    - すべてのテストとclippyが合格
+
 ## TODO
+
 
 ## @CLAUDE
 
