@@ -6,10 +6,16 @@ pub struct TocGenerator {
     book_title: String,
     show_sections: String,
     base_path: String,
+    foldlevel: u8,
 }
 
 impl TocGenerator {
-    pub fn new(book_title: String, show_sections: String, base_path: String) -> Self {
+    pub fn new(
+        book_title: String,
+        show_sections: String,
+        base_path: String,
+        foldlevel: u8,
+    ) -> Self {
         // Normalize base_path:
         // - Add "/" at the beginning if not present
         // - Add "/" at the end if not present
@@ -33,6 +39,7 @@ impl TocGenerator {
             book_title,
             show_sections,
             base_path: normalized_base_path,
+            foldlevel,
         }
     }
 
@@ -57,14 +64,109 @@ impl TocGenerator {
 
         for item in items {
             match item {
-                BookItem::Part { title } => {
+                BookItem::Part {
+                    title,
+                    level,
+                    children,
+                } => {
+                    // Check if current page is in this part's children
+                    let contains_current = current_page.is_some_and(|current| {
+                        children.iter().any(|p| p.output_filename == current)
+                    });
+
+                    // Check if this part should be folded by default
+                    // Don't fold if it contains the current page
+                    let should_fold =
+                        self.foldlevel > 0 && *level >= self.foldlevel && !contains_current;
+                    let fold_class = if should_fold && !children.is_empty() {
+                        " foldable"
+                    } else {
+                        ""
+                    };
+                    let collapsed_class = if should_fold && !children.is_empty() {
+                        " collapsed"
+                    } else {
+                        ""
+                    };
+
                     // Render part as a separator/heading (no link)
-                    html.push_str(&format!(
-                        "    <li class=\"toc-part\">{}</li>\n",
-                        html_escape(title)
-                    ));
+                    // Use level-specific CSS class
+                    let class = format!("toc-part toc-part-level-{}{}", level, fold_class);
+
+                    // Add toggle button if has children
+                    if !children.is_empty() {
+                        html.push_str(&format!(
+                            "    <li class=\"{}\">\n      <div class=\"toc-part-header{}\">\n        <button class=\"toc-fold-toggle\" aria-label=\"Toggle section\">\n          <svg class=\"fold-icon\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">\n            <path d=\"M3 4.5l3 3 3-3\" stroke=\"currentColor\" stroke-width=\"1.5\" fill=\"none\" stroke-linecap=\"round\"/>\n          </svg>\n        </button>\n        <span>{}</span>\n      </div>\n",
+                            class,
+                            collapsed_class,
+                            html_escape(title)
+                        ));
+                    } else {
+                        html.push_str(&format!(
+                            "    <li class=\"{}\">{}</li>\n",
+                            class,
+                            html_escape(title)
+                        ));
+                    }
+
+                    // Render child pages with indentation in a collapsible container
+                    if !children.is_empty() {
+                        html.push_str(&format!(
+                            "      <ul class=\"toc-children{}\">\n",
+                            collapsed_class
+                        ));
+                        for page in children {
+                            let is_current = Some(page.output_filename.as_str()) == current_page;
+                            let current_class = if is_current { " current" } else { "" };
+                            let indent_class = format!("toc-page-child toc-page-indent-{}", level);
+
+                            html.push_str(&format!(
+                                "        <li>\n          <a href=\"{}/{}\" class=\"{}{}\">{}</a>\n",
+                                self.base_path,
+                                html_escape(&page.output_filename),
+                                indent_class,
+                                current_class,
+                                html_escape(&page.title)
+                            ));
+
+                            // Add sections based on show_sections setting
+                            let should_show = match self.show_sections.as_str() {
+                                "always" => true,
+                                "current" => is_current,
+                                "never" => false,
+                                _ => is_current, // default to "current"
+                            };
+
+                            if should_show && !page.sections.is_empty() {
+                                // Apply indent class to sections based on parent part level
+                                let sections_class =
+                                    format!("toc-sections toc-sections-indent-{}", level);
+                                html.push_str(&format!(
+                                    "          <ul class=\"{}\">\n",
+                                    sections_class
+                                ));
+                                for section in &page.sections {
+                                    html.push_str(&format!(
+                                        "            <li><a href=\"{}/{}#{}\">{}</a></li>\n",
+                                        self.base_path,
+                                        html_escape(&page.output_filename),
+                                        html_escape(&section.id),
+                                        html_escape(&section.title)
+                                    ));
+                                }
+                                html.push_str("          </ul>\n");
+                            }
+
+                            html.push_str("        </li>\n");
+                        }
+
+                        // Close children container
+                        html.push_str("      </ul>\n");
+                        html.push_str("    </li>\n");
+                    }
                 }
                 BookItem::Page(page) => {
+                    // Top-level page (not under any part)
                     let is_current = Some(page.output_filename.as_str()) == current_page;
                     let current_class = if is_current { " class=\"current\"" } else { "" };
                     html.push_str(&format!(
@@ -105,6 +207,33 @@ impl TocGenerator {
         html.push_str("  </ul>\n");
         html.push_str("</nav>\n");
         html.push_str("<div id=\"content-wrapper\">\n");
+
+        // Add JavaScript for fold/unfold functionality
+        html.push_str("<script>\n");
+        html.push_str("(function() {\n");
+        html.push_str(
+            "  document.querySelectorAll('.toc-part-header').forEach(function(header) {\n",
+        );
+        html.push_str("    header.addEventListener('click', function(e) {\n");
+        html.push_str("      e.preventDefault();\n");
+        html.push_str("      e.stopPropagation();\n");
+        html.push_str("      var li = header.parentElement;\n");
+        html.push_str("      var children = li.querySelector('.toc-children');\n");
+        html.push_str("      if (children) {\n");
+        html.push_str("        var isCollapsed = header.classList.contains('collapsed');\n");
+        html.push_str("        if (isCollapsed) {\n");
+        html.push_str("          header.classList.remove('collapsed');\n");
+        html.push_str("          children.classList.remove('collapsed');\n");
+        html.push_str("        } else {\n");
+        html.push_str("          header.classList.add('collapsed');\n");
+        html.push_str("          children.classList.add('collapsed');\n");
+        html.push_str("        }\n");
+        html.push_str("      }\n");
+        html.push_str("    });\n");
+        html.push_str("  });\n");
+        html.push_str("})();\n");
+        html.push_str("</script>\n");
+
         html
     }
 
@@ -212,14 +341,135 @@ body {
 /* Part (separator/heading) styling */
 .toc-part {
   margin: 20px 0 8px 0;
-  padding: 8px 12px;
+  padding: 0;
   font-weight: bold;
   font-size: 0.9em;
-  color: var(--bg-primary);
-  background: var(--text-primary);
+  list-style: none;
+}
+
+.toc-part-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  background: transparent;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.toc-part-header:hover {
+  background: var(--bg-hover);
+}
+
+/* Level 1 specific: inverted colors */
+.toc-part-level-1 .toc-part-header {
+  color: var(--bg-primary);
+  background: var(--text-primary);
+}
+
+.toc-part-level-1 .toc-part-header:hover {
+  background: var(--text-secondary);
+}
+
+.toc-part-header span {
+  flex: 1;
+}
+
+.toc-fold-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.toc-fold-toggle:hover {
+  transform: scale(1.1);
+}
+
+.toc-fold-toggle .fold-icon {
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.toc-part-header.collapsed .fold-icon {
+  transform: rotate(-90deg);
+}
+
+.toc-children {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 0;
+  max-height: 10000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.toc-children.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Part without children (no header wrapper) */
+.toc-part:not(:has(.toc-part-header)) {
+  padding: 8px 12px;
+  color: var(--text-primary);
+  background: transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+}
+
+/* Level 1: 大見出し (Part) - inverted colors for parts without children */
+.toc-part-level-1:not(:has(.toc-part-header)) {
+  color: var(--bg-primary);
+  background: var(--text-primary);
+}
+
+/* Level 2: 中見出し (Chapter) */
+.toc-part-level-2 {
+  margin-left: 12px !important;
+}
+
+/* Level 3: 小見出し (Section) */
+.toc-part-level-3 {
+  margin-left: 20px !important;
+}
+
+/* Child page indentation */
+.toc-page-child {
+  display: block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.toc-page-indent-1 {
+  padding-left: 16px !important;
+}
+
+.toc-page-indent-2 {
+  padding-left: 24px !important;
+}
+
+.toc-page-indent-3 {
+  padding-left: 32px !important;
 }
 
 /* Section (H2) styling */
@@ -246,6 +496,19 @@ body {
 .toc-sections a:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+/* Additional indentation for sections under child pages */
+.toc-sections-indent-1 a {
+  padding-left: 40px;
+}
+
+.toc-sections-indent-2 a {
+  padding-left: 48px;
+}
+
+.toc-sections-indent-3 a {
+  padding-left: 56px;
 }
 
 /* Table styling */
@@ -345,8 +608,12 @@ mod tests {
 
     #[test]
     fn test_toc_generator_new() {
-        let generator =
-            TocGenerator::new("My Book".to_string(), "current".to_string(), "".to_string());
+        let generator = TocGenerator::new(
+            "My Book".to_string(),
+            "current".to_string(),
+            "".to_string(),
+            0,
+        );
         assert_eq!(generator.book_title, "My Book");
     }
 
@@ -356,6 +623,7 @@ mod tests {
             "Test Book".to_string(),
             "current".to_string(),
             "".to_string(),
+            0,
         );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
@@ -378,6 +646,7 @@ mod tests {
             "Test Book".to_string(),
             "current".to_string(),
             "".to_string(),
+            0,
         );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, Some("chapter1.html"));
@@ -393,6 +662,7 @@ mod tests {
             "Test <Book>".to_string(),
             "current".to_string(),
             "".to_string(),
+            0,
         );
         let items = vec![BookItem::Page(PageInfo {
             title: "Chapter <1>".to_string(),
@@ -427,7 +697,7 @@ mod tests {
     #[test]
     fn test_toc_links_correct() {
         let generator =
-            TocGenerator::new("Test".to_string(), "current".to_string(), "".to_string());
+            TocGenerator::new("Test".to_string(), "current".to_string(), "".to_string(), 0);
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
 
@@ -444,6 +714,7 @@ mod tests {
             "Test".to_string(),
             "current".to_string(),
             "gnuplot-book".to_string(),
+            0,
         );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
@@ -454,6 +725,7 @@ mod tests {
             "Test".to_string(),
             "current".to_string(),
             "/gnuplot-book".to_string(),
+            0,
         );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
@@ -464,6 +736,7 @@ mod tests {
             "Test".to_string(),
             "current".to_string(),
             "gnuplot-book/".to_string(),
+            0,
         );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
@@ -474,6 +747,7 @@ mod tests {
             "Test".to_string(),
             "current".to_string(),
             "/gnuplot-book/".to_string(),
+            0,
         );
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
@@ -481,7 +755,7 @@ mod tests {
 
         // Test with empty base_path
         let generator =
-            TocGenerator::new("Test".to_string(), "current".to_string(), "".to_string());
+            TocGenerator::new("Test".to_string(), "current".to_string(), "".to_string(), 0);
         let items = create_test_items();
         let html = generator.generate_toc_html(&items, None);
         assert!(html.contains("<a href=\"/intro.html\">Introduction</a>"));

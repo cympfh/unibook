@@ -15,6 +15,14 @@ output_dir = "docs"
 # Options: "always", "current", "never"
 # Default: "current" (show only for current page)
 show_sections = "current"
+# Fold level: Parts with level >= foldlevel will be folded by default
+# 0 = no folding (default), 1 = fold level 1+, 2 = fold level 2+, 3 = fold level 3+
+foldlevel = 1
+
+[[pages]]
+title = "Getting Started"
+level = 1
+# items を省略すると、次のPartまでのページが自動的に子ページになる
 
 [[pages]]
 title = "Introduction"
@@ -23,3 +31,12 @@ path = "intro.md"
 [[pages]]
 title = "Chapter 1"
 path = "chapter1.md"
+
+[[pages]]
+title = "Empty Part (with items=[])"
+level = 2
+items = []
+
+[[pages]]
+title = "Configuration"
+level = 3

@@ -415,14 +415,119 @@ body {
 /* Part (separator/heading) styling */
 .toc-part {
   margin: 20px 0 8px 0;
-  padding: 8px 12px;
+  padding: 0;
   font-weight: bold;
   font-size: 0.9em;
+  list-style: none;
+}
+
+.toc-part-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
   color: var(--bg-primary);
   background: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+
+.toc-part-header:hover {
+  opacity: 0.9;
+}
+
+.toc-part-header span {
+  flex: 1;
+}
+
+.toc-fold-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--bg-primary);
+  transition: transform 0.2s ease;
+}
+
+.toc-fold-toggle:hover {
+  opacity: 0.8;
+}
+
+.toc-fold-toggle .fold-icon {
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.toc-part-header.collapsed .fold-icon {
+  transform: rotate(-90deg);
+}
+
+.toc-children {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 0;
+  max-height: 10000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.toc-children.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Part without children (no header wrapper) */
+.toc-part:not(:has(.toc-part-header)) {
+  padding: 8px 12px;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+}
+
+/* Level 2: 中見出し (Chapter) */
+.toc-part-level-2 {
+  opacity: 0.8;
+}
+
+/* Level 3: 小見出し (Section) */
+.toc-part-level-3 {
+  opacity: 0.6;
+}
+
+/* Child page indentation */
+.toc-page-child {
+  display: block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.toc-page-indent-1 {
+  padding-left: 16px !important;
+}
+
+.toc-page-indent-2 {
+  padding-left: 24px !important;
+}
+
+.toc-page-indent-3 {
+  padding-left: 32px !important;
 }
 
 /* Section (H2) styling */
@@ -449,6 +554,19 @@ body {
 .toc-sections a:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+/* Additional indentation for sections under child pages */
+.toc-sections-indent-1 a {
+  padding-left: 40px;
+}
+
+.toc-sections-indent-2 a {
+  padding-left: 48px;
+}
+
+.toc-sections-indent-3 a {
+  padding-left: 56px;
 }
 
 /* Table styling */
@@ -630,21 +748,57 @@ table tbody tr:hover {
     Search
   </button>
   <ul class="toc-list">
-    <li>
-      <a href="/intro.html" class="current">Introduction</a>
-      <ul class="toc-sections">
-        <li><a href="/intro.html#2-Getting%20Started">Getting Started</a></li>
-        <li><a href="/intro.html#2-Code%20Example">Code Example</a></li>
-        <li><a href="/intro.html#2-Navigation">Navigation</a></li>
-        <li><a href="/intro.html#2-Incremental%20Build%20Test">Incremental Build Test</a></li>
+    <li class="toc-part toc-part-level-1">
+      <div class="toc-part-header">
+        <button class="toc-fold-toggle" aria-label="Toggle section">
+          <svg class="fold-icon" width="12" height="12" viewBox="0 0 12 12">
+            <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <span>Getting Started</span>
+      </div>
+      <ul class="toc-children">
+        <li>
+          <a href="/intro.html" class="toc-page-child toc-page-indent-1 current">Introduction</a>
+          <ul class="toc-sections toc-sections-indent-1">
+            <li><a href="/intro.html#2-Getting%20Started">Getting Started</a></li>
+            <li><a href="/intro.html#2-Code%20Example">Code Example</a></li>
+            <li><a href="/intro.html#2-Navigation">Navigation</a></li>
+            <li><a href="/intro.html#2-Incremental%20Build%20Test">Incremental Build Test</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="/chapter1.html" class="toc-page-child toc-page-indent-1">Chapter 1</a>
+        </li>
       </ul>
     </li>
-    <li>
-      <a href="/chapter1.html">Chapter 1</a>
-    </li>
+    <li class="toc-part toc-part-level-2">Empty Part (with items=[])</li>
+    <li class="toc-part toc-part-level-3">Configuration</li>
   </ul>
 </nav>
 <div id="content-wrapper">
+<script>
+(function() {
+  document.querySelectorAll('.toc-part-header').forEach(function(header) {
+    header.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var li = header.parentElement;
+      var children = li.querySelector('.toc-children');
+      if (children) {
+        var isCollapsed = header.classList.contains('collapsed');
+        if (isCollapsed) {
+          header.classList.remove('collapsed');
+          children.classList.remove('collapsed');
+        } else {
+          header.classList.add('collapsed');
+          children.classList.add('collapsed');
+        }
+      }
+    });
+  });
+})();
+</script>
 <div class="page-controls">
 <button id="toc-toggle" class="toc-toggle" title="Toggle sidebar">
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">

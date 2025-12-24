@@ -4,7 +4,11 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub enum BookItem {
-    Part { title: String },
+    Part {
+        title: String,
+        level: u8,
+        children: Vec<PageInfo>,
+    },
     Page(PageInfo),
 }
 
@@ -31,45 +35,108 @@ pub struct Section {
 impl Book {
     pub fn from_config(config: Config, base_dir: &Path) -> Result<Self> {
         let mut items = Vec::new();
+        let mut i = 0;
 
-        for page_config in &config.pages {
+        while i < config.pages.len() {
+            let page_config = &config.pages[i];
+
             match &page_config.path {
                 None => {
                     // No path = Part (heading only)
+                    let mut children = Vec::new();
+
+                    match &page_config.items {
+                        Some(explicit_items) => {
+                            // Items explicitly specified (even if empty)
+                            for item in explicit_items {
+                                let page_info = Self::create_page_info(
+                                    &item.title,
+                                    &item.path,
+                                    base_dir,
+                                    &config.build.src_dir,
+                                )?;
+                                children.push(page_info);
+                            }
+                        }
+                        None => {
+                            // Items not specified: auto-group following pages until next Part or end
+                            let mut j = i + 1;
+                            while j < config.pages.len() {
+                                let next_config = &config.pages[j];
+                                // Stop if we encounter another Part (no path)
+                                if next_config.path.is_none() {
+                                    break;
+                                }
+                                // Add this page as a child
+                                if let Some(path) = &next_config.path {
+                                    let page_info = Self::create_page_info(
+                                        &next_config.title,
+                                        path,
+                                        base_dir,
+                                        &config.build.src_dir,
+                                    )?;
+                                    children.push(page_info);
+                                }
+                                j += 1;
+                            }
+                            // Skip the pages we just consumed
+                            i = j - 1;
+                        }
+                    }
+
                     items.push(BookItem::Part {
                         title: page_config.title.clone(),
+                        level: page_config.level,
+                        children,
                     });
                 }
                 Some(path) => {
-                    // Has path = Page
-                    let source_path = base_dir.join(&config.build.src_dir).join(path);
-
-                    // Validate that source file exists
-                    if !source_path.exists() {
-                        anyhow::bail!(
-                            "Source file not found: {} (looking for: {})",
-                            path,
-                            source_path.display()
-                        );
-                    }
-
-                    // Convert path to output filename (e.g., intro.md -> intro.html)
-                    let output_filename = Self::source_to_html_filename(path)?;
-
-                    // Extract H2 sections from markdown
-                    let sections = Self::extract_sections(&source_path)?;
-
-                    items.push(BookItem::Page(PageInfo {
-                        title: page_config.title.clone(),
-                        source_path,
-                        output_filename,
-                        sections,
-                    }));
+                    // Has path = standalone Page (not part of any part)
+                    let page_info = Self::create_page_info(
+                        &page_config.title,
+                        path,
+                        base_dir,
+                        &config.build.src_dir,
+                    )?;
+                    items.push(BookItem::Page(page_info));
                 }
             }
+
+            i += 1;
         }
 
         Ok(Self { config, items })
+    }
+
+    fn create_page_info(
+        title: &str,
+        path: &str,
+        base_dir: &Path,
+        src_dir: &Path,
+    ) -> Result<PageInfo> {
+        let source_path = base_dir.join(src_dir).join(path);
+
+        // Validate that source file exists
+        if !source_path.exists() {
+            anyhow::bail!(
+                "Source file not found: {} (looking for: {})",
+                path,
+                source_path.display()
+            );
+        }
+
+        // Convert path to output filename
+        let output_filename = Self::source_to_html_filename(path)?;
+
+        // Extract H2 sections from markdown
+        let sections = Self::extract_sections(&source_path)?;
+
+        Ok(PageInfo {
+            title: title.to_string(),
+            source_path,
+            output_filename,
+            sections,
+        })
     }
 
     fn source_to_html_filename(source_path: &str) -> Result<String> {
@@ -154,15 +221,20 @@ mod tests {
             },
             toc: TocConfig {
                 show_sections: "current".to_string(),
+                foldlevel: 0,
             },
             pages: vec![
                 PageConfig {
                     title: "Page 1".to_string(),
                     path: Some("page1.md".to_string()),
+                    level: 1,
+                    items: None,
                 },
                 PageConfig {
                     title: "Page 2".to_string(),
                     path: Some("page2.md".to_string()),
+                    level: 1,
+                    items: None,
                 },
             ],
         }

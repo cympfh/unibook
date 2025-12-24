@@ -23,17 +23,27 @@ impl SearchIndexGenerator {
         let mut entries = Vec::new();
 
         for item in &book.items {
-            let page = match item {
-                crate::book::BookItem::Part { .. } => continue, // Skip parts
-                crate::book::BookItem::Page(page) => page,
-            };
-
-            let content = Self::extract_text_from_markdown(&page.source_path)?;
-            entries.push(SearchEntry {
-                title: page.title.clone(),
-                url: page.output_filename.clone(),
-                content,
-            });
+            match item {
+                crate::book::BookItem::Part { children, .. } => {
+                    // Add all child pages to search index
+                    for page in children {
+                        let content = Self::extract_text_from_markdown(&page.source_path)?;
+                        entries.push(SearchEntry {
+                            title: page.title.clone(),
+                            url: page.output_filename.clone(),
+                            content,
+                        });
+                    }
+                }
+                crate::book::BookItem::Page(page) => {
+                    let content = Self::extract_text_from_markdown(&page.source_path)?;
+                    entries.push(SearchEntry {
+                        title: page.title.clone(),
+                        url: page.output_filename.clone(),
+                        content,
+                    });
+                }
+            }
         }
 
         let index = SearchIndex { pages: entries };

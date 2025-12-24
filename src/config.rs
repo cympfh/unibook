@@ -53,10 +53,19 @@ pub struct TocConfig {
     /// - "never": Never show sections
     #[serde(default = "default_show_sections")]
     pub show_sections: String,
+    /// Fold level for parts
+    /// Parts with level >= foldlevel will be folded by default
+    /// 0 = no folding (default), 1 = fold level 1+, 2 = fold level 2+, 3 = fold level 3+
+    #[serde(default = "default_foldlevel")]
+    pub foldlevel: u8,
 }
 
 fn default_show_sections() -> String {
     "current".to_string()
+}
+
+fn default_foldlevel() -> u8 {
+    0
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -64,6 +73,27 @@ pub struct PageConfig {
     pub title: String,
     /// Path to the markdown file. If None, this is a part (separator/heading only)
     pub path: Option<String>,
+    /// Level for parts (1=大見出し/Part, 2=中見出し/Chapter, 3=小見出し/Section)
+    /// Only used when path is None. Defaults to 1 if not specified.
+    #[serde(default = "default_part_level")]
+    pub level: u8,
+    /// Child pages under this part (only valid when path is None)
+    /// - None: auto-group following pages (default)
+    /// - Some([]): no children
+    /// - Some([...]): explicit children
+    #[serde(default)]
+    pub items: Option<Vec<PageItem>>,
+}
+
+/// A page item that can be nested under a part
+#[derive(Debug, Deserialize, Clone)]
+pub struct PageItem {
+    pub title: String,
+    pub path: String,
+}
+
+fn default_part_level() -> u8 {
+    1
 }
 
 fn default_src_dir() -> PathBuf {
@@ -92,6 +122,7 @@ impl Default for TocConfig {
     fn default() -> Self {
         Self {
             show_sections: default_show_sections(),
+            foldlevel: default_foldlevel(),
         }
     }
 }
