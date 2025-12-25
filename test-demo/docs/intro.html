@@ -426,18 +426,28 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  color: var(--bg-primary);
-  background: var(--text-primary);
+  color: var(--text-primary);
+  background: transparent;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
-  transition: opacity 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .toc-part-header:hover {
-  opacity: 0.9;
+  background: var(--bg-hover);
+}
+
+/* Level 1 specific: inverted colors */
+.toc-part-level-1 .toc-part-header {
+  color: var(--bg-primary);
+  background: var(--text-primary);
+}
+
+.toc-part-level-1 .toc-part-header:hover {
+  background: var(--text-secondary);
 }
 
 .toc-part-header span {
@@ -455,12 +465,12 @@ body {
   justify-content: center;
   width: 20px;
   height: 20px;
-  color: var(--bg-primary);
+  color: currentColor;
   transition: transform 0.2s ease;
 }
 
 .toc-fold-toggle:hover {
-  opacity: 0.8;
+  transform: scale(1.1);
 }
 
 .toc-fold-toggle .fold-icon {
@@ -490,21 +500,27 @@ body {
 /* Part without children (no header wrapper) */
 .toc-part:not(:has(.toc-part-header)) {
   padding: 8px 12px;
-  color: var(--bg-primary);
-  background: var(--text-primary);
+  color: var(--text-primary);
+  background: transparent;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 4px;
 }
 
+/* Level 1: 大見出し (Part) - inverted colors for parts without children */
+.toc-part-level-1:not(:has(.toc-part-header)) {
+  color: var(--bg-primary);
+  background: var(--text-primary);
+}
+
 /* Level 2: 中見出し (Chapter) */
 .toc-part-level-2 {
-  opacity: 0.8;
+  margin-left: 12px !important;
 }
 
 /* Level 3: 小見出し (Section) */
 .toc-part-level-3 {
-  opacity: 0.6;
+  margin-left: 20px !important;
 }
 
 /* Child page indentation */
@@ -755,7 +771,7 @@ table tbody tr:hover {
             <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
           </svg>
         </button>
-        <span>Getting Started</span>
+        <span>Getting Started \(~\)</span>
       </div>
       <ul class="toc-children">
         <li>
@@ -769,6 +785,9 @@ table tbody tr:hover {
         </li>
         <li>
           <a href="/chapter1.html" class="toc-page-child toc-page-indent-1">Chapter 1</a>
+        </li>
+        <li>
+          <a href="/math-test.html" class="toc-page-child toc-page-indent-1">Math Test \(x^2\)</a>
         </li>
       </ul>
     </li>

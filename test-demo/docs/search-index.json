@@ -9,6 +9,11 @@
       "title": "Chapter 1",
       "url": "chapter1.html",
       "content": "Chapter 1 This is the first chapter of your book. Section 1.1 Add your content here. Section 1.2 Add more content here."
+    },
+    {
+      "title": "Math Test $x^2$",
+      "url": "math-test.html",
+      "content": "数式テスト $x^2$ このページはMathJaxのテストです。 セクション $~$ Test 数式 $E = mc^2$ を含むセクションタイトル。 別のセクション $\\alpha + \\beta$ 本文中にも数式を書きます: $\\int0^1 f(x) dx$ 数式ブロックも使えます： $$ \\frac{d}{dx} \\sin(x) = \\cos(x) $$"
     }
   ]
 }

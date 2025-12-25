@@ -20,7 +20,7 @@ show_sections = "current"
 foldlevel = 1
 
 [[pages]]
-title = "Getting Started"
+title = "Getting Started $~$"
 level = 1
 # items を省略すると、次のPartまでのページが自動的に子ページになる
 
@@ -31,6 +31,10 @@ path = "intro.md"
 [[pages]]
 title = "Chapter 1"
 path = "chapter1.md"
+
+[[pages]]
+title = "Math Test $x^2$"
+path = "math-test.md"
 
 [[pages]]
 title = "Empty Part (with items=[])"

@@ -562,8 +562,46 @@ table tbody tr:hover {
     }
 }
 
+fn convert_math_delimiters(s: &str) -> String {
+    let mut result = String::new();
+    let mut in_dollar = false;
+    let mut buffer = String::new();
+
+    for ch in s.chars() {
+        if ch == '$' {
+            if in_dollar {
+                // Closing $, convert buffer content
+                result.push_str("\\(");
+                result.push_str(&buffer);
+                result.push_str("\\)");
+                buffer.clear();
+                in_dollar = false;
+            } else {
+                // Opening $
+                in_dollar = true;
+            }
+        } else if in_dollar {
+            buffer.push(ch);
+        } else {
+            result.push(ch);
+        }
+    }
+
+    // If still in_dollar at the end, it means unclosed $
+    // Just append the remaining content as-is
+    if in_dollar {
+        result.push('$');
+        result.push_str(&buffer);
+    }
+
+    result
+}
+
 fn html_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
+    // First convert math delimiters, then escape HTML
+    let converted = convert_math_delimiters(s);
+    converted
+        .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
@@ -598,12 +636,32 @@ mod tests {
     }
 
     #[test]
+    fn test_convert_math_delimiters() {
+        assert_eq!(convert_math_delimiters("Hello"), "Hello");
+        assert_eq!(convert_math_delimiters("$x^2$"), "\\(x^2\\)");
+        assert_eq!(
+            convert_math_delimiters("Text $a+b$ more"),
+            "Text \\(a+b\\) more"
+        );
+        assert_eq!(
+            convert_math_delimiters("$x$ and $y$"),
+            "\\(x\\) and \\(y\\)"
+        );
+        assert_eq!(convert_math_delimiters("$~$"), "\\(~\\)");
+        // Test unclosed dollar
+        assert_eq!(convert_math_delimiters("$unclosed"), "$unclosed");
+    }
+
+    #[test]
     fn test_html_escape() {
         assert_eq!(html_escape("Hello"), "Hello");
         assert_eq!(html_escape("<script>"), "&lt;script&gt;");
         assert_eq!(html_escape("A & B"), "A &amp; B");
         assert_eq!(html_escape("\"quote\""), "&quot;quote&quot;");
         assert_eq!(html_escape("'single'"), "&#39;single&#39;");
+        // Test math conversion with HTML escaping
+        assert_eq!(html_escape("$x^2$"), "\\(x^2\\)");
+        assert_eq!(html_escape("Title $~$ Test"), "Title \\(~\\) Test");
     }
 
     #[test]
