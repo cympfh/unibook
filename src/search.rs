@@ -21,19 +21,27 @@ pub struct SearchIndexGenerator;
 impl SearchIndexGenerator {
     pub fn generate(book: &Book, output_dir: &Path) -> Result<()> {
         let mut entries = Vec::new();
+        Self::collect_entries(&book.items, &mut entries)?;
 
-        for item in &book.items {
+        let index = SearchIndex { pages: entries };
+        let json =
+            serde_json::to_string_pretty(&index).context("Failed to serialize search index")?;
+
+        let index_path = output_dir.join("search-index.json");
+        fs::write(&index_path, json).context("Failed to write search index")?;
+
+        Ok(())
+    }
+
+    fn collect_entries(
+        items: &[crate::book::BookItem],
+        entries: &mut Vec<SearchEntry>,
+    ) -> Result<()> {
+        for item in items {
             match item {
                 crate::book::BookItem::Part { children, .. } => {
-                    // Add all child pages to search index
-                    for page in children {
-                        let content = Self::extract_text_from_markdown(&page.source_path)?;
-                        entries.push(SearchEntry {
-                            title: page.title.clone(),
-                            url: page.output_filename.clone(),
-                            content,
-                        });
-                    }
+                    // Recursively collect from children
+                    Self::collect_entries(children, entries)?;
                 }
                 crate::book::BookItem::Page(page) => {
                     let content = Self::extract_text_from_markdown(&page.source_path)?;
@@ -45,14 +53,6 @@ impl SearchIndexGenerator {
                 }
             }
         }
-
-        let index = SearchIndex { pages: entries };
-        let json =
-            serde_json::to_string_pretty(&index).context("Failed to serialize search index")?;
-
-        let index_path = output_dir.join("search-index.json");
-        fs::write(&index_path, json).context("Failed to write search index")?;
-
         Ok(())
     }
 

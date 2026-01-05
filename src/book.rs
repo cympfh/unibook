@@ -6,8 +6,7 @@ use std::path::{Path, PathBuf};
 pub enum BookItem {
     Part {
         title: String,
-        level: u8,
-        children: Vec<PageInfo>,
+        children: Vec<BookItem>,
     },
     Page(PageInfo),
 }
@@ -49,13 +48,20 @@ impl Book {
                         Some(explicit_items) => {
                             // Items explicitly specified (even if empty)
                             for item in explicit_items {
-                                let page_info = Self::create_page_info(
-                                    &item.title,
-                                    &item.path,
-                                    base_dir,
-                                    &config.build.src_dir,
-                                )?;
-                                children.push(page_info);
+                                let child_item = if item.path.is_empty() {
+                                    // Nested Part
+                                    Self::parse_nested_part(item, base_dir, &config.build.src_dir)?
+                                } else {
+                                    // Page
+                                    let page_info = Self::create_page_info(
+                                        &item.title,
+                                        &item.path,
+                                        base_dir,
+                                        &config.build.src_dir,
+                                    )?;
+                                    BookItem::Page(page_info)
+                                };
+                                children.push(child_item);
                             }
                         }
                         None => {
@@ -75,7 +81,7 @@ impl Book {
                                         base_dir,
                                         &config.build.src_dir,
                                     )?;
-                                    children.push(page_info);
+                                    children.push(BookItem::Page(page_info));
                                 }
                                 j += 1;
                             }
@@ -86,7 +92,6 @@ impl Book {
 
                     items.push(BookItem::Part {
                         title: page_config.title.clone(),
-                        level: page_config.level,
                         children,
                     });
                 }
@@ -106,6 +111,34 @@ impl Book {
         }
 
         Ok(Self { config, items })
+    }
+
+    fn parse_nested_part(
+        item: &crate::config::PageItem,
+        base_dir: &Path,
+        src_dir: &Path,
+    ) -> Result<BookItem> {
+        let mut children = Vec::new();
+
+        if let Some(child_items) = &item.items {
+            for child in child_items {
+                let child_item = if child.path.is_empty() {
+                    // Recursively parse nested part
+                    Self::parse_nested_part(child, base_dir, src_dir)?
+                } else {
+                    // Page
+                    let page_info =
+                        Self::create_page_info(&child.title, &child.path, base_dir, src_dir)?;
+                    BookItem::Page(page_info)
+                };
+                children.push(child_item);
+            }
+        }
+
+        Ok(BookItem::Part {
+            title: item.title.clone(),
+            children,
+        })
     }
 
     fn create_page_info(
@@ -227,13 +260,11 @@ mod tests {
                 PageConfig {
                     title: "Page 1".to_string(),
                     path: Some("page1.md".to_string()),
-                    level: 1,
                     items: None,
                 },
                 PageConfig {
                     title: "Page 2".to_string(),
                     path: Some("page2.md".to_string()),
-                    level: 1,
                     items: None,
                 },
             ],

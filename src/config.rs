@@ -73,10 +73,6 @@ pub struct PageConfig {
     pub title: String,
     /// Path to the markdown file. If None, this is a part (separator/heading only)
     pub path: Option<String>,
-    /// Level for parts (1=大見出し/Part, 2=中見出し/Chapter, 3=小見出し/Section)
-    /// Only used when path is None. Defaults to 1 if not specified.
-    #[serde(default = "default_part_level")]
-    pub level: u8,
     /// Child pages under this part (only valid when path is None)
     /// - None: auto-group following pages (default)
     /// - Some([]): no children
@@ -89,11 +85,11 @@ pub struct PageConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct PageItem {
     pub title: String,
+    #[serde(default)]
     pub path: String,
-}
-
-fn default_part_level() -> u8 {
-    1
+    /// Child items under this part (only valid when path is empty)
+    #[serde(default)]
+    pub items: Option<Vec<PageItem>>,
 }
 
 fn default_src_dir() -> PathBuf {

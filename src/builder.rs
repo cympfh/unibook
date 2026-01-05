@@ -39,64 +39,32 @@ impl Builder {
             self.book.config.toc.foldlevel,
         );
 
-        for item in &self.book.items {
-            match item {
-                crate::book::BookItem::Part { children, .. } => {
-                    // Build all child pages under this part
-                    for page in children {
-                        println!(
-                            "Building: {} -> {}",
-                            page.source_path.display(),
-                            page.output_filename
-                        );
+        // Collect all pages recursively
+        let all_pages = Self::collect_pages(&self.book.items);
 
-                        // Generate TOC with current page highlighted
-                        let toc_html = toc_gen
-                            .generate_toc_html(&self.book.items, Some(&page.output_filename));
-                        // Replace path separators in slug to avoid creating subdirectories in temp_dir
-                        let slug = page.slug().replace(['/', '\\'], "_");
-                        let toc_path = self.temp_dir.join(format!("toc-{}.html", slug));
-                        fs::write(&toc_path, toc_html).context("Failed to write TOC file")?;
+        for page in &all_pages {
+            println!(
+                "Building: {} -> {}",
+                page.source_path.display(),
+                page.output_filename
+            );
 
-                        // Build the page
-                        let output_file = output_dir.join(&page.output_filename);
+            // Generate TOC with current page highlighted
+            let toc_html = toc_gen.generate_toc_html(&self.book.items, Some(&page.output_filename));
+            // Replace path separators in slug to avoid creating subdirectories in temp_dir
+            let slug = page.slug().replace(['/', '\\'], "_");
+            let toc_path = self.temp_dir.join(format!("toc-{}.html", slug));
+            fs::write(&toc_path, toc_html).context("Failed to write TOC file")?;
 
-                        // Create parent directories if they don't exist
-                        if let Some(parent) = output_file.parent() {
-                            fs::create_dir_all(parent)
-                                .context("Failed to create output subdirectories")?;
-                        }
+            // Build the page
+            let output_file = output_dir.join(&page.output_filename);
 
-                        self.build_page(page, &toc_path, &output_file)?;
-                    }
-                }
-                crate::book::BookItem::Page(page) => {
-                    println!(
-                        "Building: {} -> {}",
-                        page.source_path.display(),
-                        page.output_filename
-                    );
-
-                    // Generate TOC with current page highlighted
-                    let toc_html =
-                        toc_gen.generate_toc_html(&self.book.items, Some(&page.output_filename));
-                    // Replace path separators in slug to avoid creating subdirectories in temp_dir
-                    let slug = page.slug().replace(['/', '\\'], "_");
-                    let toc_path = self.temp_dir.join(format!("toc-{}.html", slug));
-                    fs::write(&toc_path, toc_html).context("Failed to write TOC file")?;
-
-                    // Build the page
-                    let output_file = output_dir.join(&page.output_filename);
-
-                    // Create parent directories if they don't exist
-                    if let Some(parent) = output_file.parent() {
-                        fs::create_dir_all(parent)
-                            .context("Failed to create output subdirectories")?;
-                    }
-
-                    self.build_page(page, &toc_path, &output_file)?;
-                }
+            // Create parent directories if they don't exist
+            if let Some(parent) = output_file.parent() {
+                fs::create_dir_all(parent).context("Failed to create output subdirectories")?;
             }
+
+            self.build_page(page, &toc_path, &output_file)?;
         }
 
         // Generate search index
@@ -105,10 +73,7 @@ impl Builder {
             .context("Failed to generate search index")?;
 
         // Generate index.html that redirects to first page
-        let first_page = self.book.items.iter().find_map(|item| match item {
-            crate::book::BookItem::Part { children, .. } => children.first(),
-            crate::book::BookItem::Page(page) => Some(page),
-        });
+        let first_page = all_pages.first();
 
         if let Some(first_page) = first_page {
             let index_path = output_dir.join("index.html");
@@ -133,6 +98,21 @@ impl Builder {
         println!("\nBuild complete! Output in: {}", output_dir.display());
         self.cleanup()?;
         Ok(())
+    }
+
+    fn collect_pages(items: &[crate::book::BookItem]) -> Vec<&crate::book::PageInfo> {
+        let mut pages = Vec::new();
+        for item in items {
+            match item {
+                crate::book::BookItem::Part { children, .. } => {
+                    pages.extend(Self::collect_pages(children));
+                }
+                crate::book::BookItem::Page(page) => {
+                    pages.push(page);
+                }
+            }
+        }
+        pages
     }
 
     fn add_lang_attribute(&self, html_file: &Path) -> Result<()> {
@@ -172,20 +152,11 @@ impl Builder {
         // Normalize changed file path for comparison
         let changed_file_canonical = changed_file.canonicalize().ok();
 
-        // Find the page that corresponds to this changed file
-        let changed_page = self.book.items.iter().find_map(|item| match item {
-            crate::book::BookItem::Page(page) => {
-                let page_canonical = page.source_path.canonicalize().ok();
-                if page_canonical.is_some() && page_canonical == changed_file_canonical {
-                    Some(page)
-                } else {
-                    None
-                }
-            }
-            crate::book::BookItem::Part { children, .. } => children.iter().find(|page| {
-                let page_canonical = page.source_path.canonicalize().ok();
-                page_canonical.is_some() && page_canonical == changed_file_canonical
-            }),
+        // Collect all pages and find the one that corresponds to this changed file
+        let all_pages = Self::collect_pages(&self.book.items);
+        let changed_page = all_pages.iter().find(|page| {
+            let page_canonical = page.source_path.canonicalize().ok();
+            page_canonical.is_some() && page_canonical == changed_file_canonical
         });
 
         if let Some(page) = changed_page {
